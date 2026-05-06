@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//d//**)",
+      "Bash(npx create-next-app@14 creavity-tmp --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(robocopy creavity-tmp *)",
+      "Bash(echo \"ROBOCOPY_EXIT:$?\")",
+      "PowerShell(Get-ChildItem D:\\\\creavity-tmp -Force | Where-Object { $_.Name -ne \"CLAUDE.md\" } | ForEach-Object { Copy-Item $_.FullName D:\\\\creavity\\\\ -Recurse -Force }; Write-Host \"Done\")",
+      "Bash(npm install *)",
+      "Bash(Remove-Item -Recurse -Force D:/creavity-tmp)"
+    ]
+  }
+}

@@ -1,0 +1,365 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Check, Loader2, Globe, Lock, Users, UserCheck } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { FIELD_OPTIONS } from "@/lib/constants";
+import type { ReportContent, Visibility } from "@/types/report";
+
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+const visibilityOptions: { value: Visibility; label: string; Icon: typeof Globe }[] = [
+  { value: "private", label: "비공개", Icon: Lock },
+  { value: "custom", label: "지정한 사람", Icon: UserCheck },
+  { value: "club", label: "동아리", Icon: Users },
+  { value: "public", label: "전체 공개", Icon: Globe },
+];
+
+export default function ReportEditor() {
+  const router = useRouter();
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState<ReportContent>({
+    step1: {}, step2: {}, step3: {}, summary: {},
+  });
+  const [visibility, setVisibility] = useState<Visibility>("private");
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [publishing, setPublishing] = useState(false);
+
+  const reportIdRef = useRef<string | null>(null);
+  const firstRenderRef = useRef(true);
+
+  useEffect(() => { reportIdRef.current = reportId; }, [reportId]);
+
+  // 2초 debounce 자동저장
+  useEffect(() => {
+    if (firstRenderRef.current) { firstRenderRef.current = false; return; }
+    const timer = setTimeout(() => doSave({ asDraft: true }), 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, content, visibility]);
+
+  const buildPayload = (extra?: Record<string, unknown>) => ({
+    title: title || "제목 없음",
+    content,
+    visibility,
+    field: content.step1?.field ?? null,   // 분야 컬럼 (필터용)
+    status: "draft" as const,
+    ...extra,
+  });
+
+  const doSave = async ({ asDraft }: { asDraft: boolean }): Promise<string | null> => {
+    if (!title.trim() && !hasContent(content)) return null;
+    setSaveState("saving");
+    setSaveError(null);
+
+    const payload = buildPayload({ status: asDraft ? "draft" : "published" });
+    const currentId = reportIdRef.current;
+
+    if (currentId) {
+      const { error } = await supabase.from("reports").update(payload).eq("id", currentId);
+      if (error) { setSaveState("error"); setSaveError(error.message); return null; }
+      setSaveState("saved"); setSavedAt(new Date());
+      return currentId;
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setSaveState("error"); setSaveError("로그인이 필요합니다."); return null; }
+
+      const { data, error } = await supabase
+        .from("reports")
+        .insert({ ...payload, author_id: user.id })
+        .select("id")
+        .single();
+
+      if (error || !data) {
+        setSaveState("error");
+        setSaveError(error?.message ?? "알 수 없는 오류");
+        return null;
+      }
+      setReportId(data.id);
+      reportIdRef.current = data.id;
+      setSaveState("saved"); setSavedAt(new Date());
+      return data.id;
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!title.trim() && !hasContent(content)) return;
+    setPublishing(true);
+    setSaveError(null);
+
+    const id = reportIdRef.current ?? (await doSave({ asDraft: false }));
+    if (!id) { setPublishing(false); return; }
+
+    const { error } = await supabase
+      .from("reports")
+      .update({ status: "published", published_at: new Date().toISOString(), visibility })
+      .eq("id", id);
+
+    setPublishing(false);
+    if (error) { setSaveError(error.message); return; }
+    router.refresh();
+    router.push("/dashboard");
+  };
+
+  const updateStep = <K extends keyof ReportContent>(
+    key: K,
+    patch: Partial<NonNullable<ReportContent[K]>>
+  ) => setContent((prev) => ({ ...prev, [key]: { ...(prev[key] ?? {}), ...patch } }));
+
+  return (
+    <div className="px-10 py-10 max-w-3xl">
+      <div className="mb-6 flex items-center justify-between text-xs text-foreground/50">
+        <SaveIndicator state={saveState} savedAt={savedAt} />
+      </div>
+
+      {saveError && (
+        <div className="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-mono break-all">
+          <span className="font-semibold">저장 오류: </span>{saveError}
+        </div>
+      )}
+
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="제목 없음"
+        className="w-full text-4xl font-bold text-foreground bg-transparent border-none outline-none placeholder:text-foreground/20 mb-10"
+      />
+
+      <Section number={1} label="발견">
+        <Field label="부분">
+          <Segmented
+            value={content.step1?.kind ?? ""}
+            options={[{ value: "tech", label: "기술" }, { value: "idea", label: "아이디어" }]}
+            onChange={(v) => updateStep("step1", { kind: v })}
+          />
+        </Field>
+        <Field label="이름">
+          <Input value={content.step1?.name ?? ""} onChange={(v) => updateStep("step1", { name: v })} placeholder="기술/아이디어 이름" />
+        </Field>
+        <Field label="분야">
+          <FieldSelect value={content.step1?.field ?? ""} onChange={(v) => updateStep("step1", { field: v })} />
+        </Field>
+        <Field label="발견 난이도">
+          <Segmented
+            value={content.step1?.difficulty ?? ""}
+            options={[{ value: "casual", label: "우연히" }, { value: "searched", label: "찾다가" }, { value: "deep", label: "깊이 파다가" }]}
+            onChange={(v) => updateStep("step1", { difficulty: v })}
+          />
+        </Field>
+        <Field label="출처 이름">
+          <Input value={content.step1?.source ?? ""} onChange={(v) => updateStep("step1", { source: v })} placeholder="유튜브, 논문, 뉴스 등" />
+        </Field>
+        <Field label="출처 링크">
+          <Input value={content.step1?.url ?? ""} onChange={(v) => updateStep("step1", { url: v })} placeholder="https://..." />
+        </Field>
+        <Field label="설명">
+          <Textarea value={content.step1?.description ?? ""} onChange={(v) => updateStep("step1", { description: v })} placeholder="이 기술/아이디어를 한두 문단으로 설명해주세요" />
+        </Field>
+      </Section>
+
+      <Section number={2} label="분석">
+        <Field label="내 말로 설명">
+          <Textarea value={content.step2?.principle ?? ""} onChange={(v) => updateStep("step2", { principle: v })} placeholder="다른 사람에게 설명한다면?" />
+        </Field>
+        <Field label="강점">
+          <Textarea value={content.step2?.strengths ?? ""} onChange={(v) => updateStep("step2", { strengths: v })} placeholder="어떤 점이 좋은가요?" />
+        </Field>
+        <Field label="한계">
+          <Textarea value={content.step2?.limits ?? ""} onChange={(v) => updateStep("step2", { limits: v })} placeholder="어떤 점이 부족하거나 위험한가요?" />
+        </Field>
+      </Section>
+
+      <Section number={3} label="확장">
+        <Field label="아이디어 이름">
+          <Input value={content.step3?.idea_name ?? ""} onChange={(v) => updateStep("step3", { idea_name: v })} placeholder="새로운 아이디어의 이름" />
+        </Field>
+        <Field label="활용 방법">
+          <Textarea value={content.step3?.application ?? ""} onChange={(v) => updateStep("step3", { application: v })} placeholder="어떻게 활용할 수 있을까요?" />
+        </Field>
+        <Field label="유사한 아이디어">
+          <Textarea value={content.step3?.similar_ideas ?? ""} onChange={(v) => updateStep("step3", { similar_ideas: v })} placeholder="비슷한 사례가 있나요?" />
+        </Field>
+        <Field label="실현 가능성">
+          <Segmented
+            value={content.step3?.feasibility ?? ""}
+            options={[{ value: "easy", label: "쉬움" }, { value: "medium", label: "보통" }, { value: "hard", label: "어려움" }]}
+            onChange={(v) => updateStep("step3", { feasibility: v })}
+          />
+        </Field>
+        <Field label="이유">
+          <Textarea value={content.step3?.feasibility_reason ?? ""} onChange={(v) => updateStep("step3", { feasibility_reason: v })} placeholder="왜 그렇게 생각하나요?" />
+        </Field>
+      </Section>
+
+      <Section number={4} label="한 줄 정리">
+        <Field label="무엇을">
+          <Input
+            value={content.summary?.thing ?? ""}
+            onChange={(v) => setContent((p) => ({ ...p, summary: { ...(p.summary ?? {}), thing: v } }))}
+            placeholder="무엇에 대한 보고서인가요?"
+          />
+        </Field>
+        <Field label="해결하려는 문제">
+          <Input
+            value={content.summary?.problem ?? ""}
+            onChange={(v) => setContent((p) => ({ ...p, summary: { ...(p.summary ?? {}), problem: v } }))}
+            placeholder="어떤 문제를 풀고자 하나요?"
+          />
+        </Field>
+      </Section>
+
+      <div className="mt-12 pt-6 border-t border-border-default flex items-center justify-end gap-3">
+        <VisibilitySelect value={visibility} onChange={setVisibility} />
+        <button
+          type="button"
+          onClick={handlePublish}
+          disabled={(!title.trim() && !hasContent(content)) || publishing}
+          className="px-4 py-2 rounded-md bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {publishing ? (
+            <span className="flex items-center gap-1.5"><Loader2 size={14} className="animate-spin" />발행 중...</span>
+          ) : "발행하기"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── 분야 선택 ────────────────────────────────────────────────────────────────
+
+function FieldSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const isCustom = value !== "" && !(FIELD_OPTIONS as readonly string[]).includes(value);
+  const [showCustom, setShowCustom] = useState(isCustom);
+  const [customVal, setCustomVal] = useState(isCustom ? value : "");
+
+  const handleSelect = (opt: string) => {
+    if (opt === "__other__") {
+      setShowCustom(true);
+      onChange(customVal);
+    } else {
+      setShowCustom(false);
+      onChange(opt === value ? "" : opt);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {FIELD_OPTIONS.map((opt) => (
+          <button key={opt} type="button" onClick={() => handleSelect(opt)}
+            className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
+              !showCustom && value === opt ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+            }`}>
+            {opt}
+          </button>
+        ))}
+        <button type="button" onClick={() => handleSelect("__other__")}
+          className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
+            showCustom ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+          }`}>
+          기타
+        </button>
+      </div>
+      {showCustom && (
+        <input autoFocus type="text" value={customVal}
+          onChange={(e) => { setCustomVal(e.target.value); onChange(e.target.value); }}
+          placeholder="직접 입력..."
+          className="w-full px-0 py-1.5 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30"
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── 공통 UI ──────────────────────────────────────────────────────────────────
+
+function SaveIndicator({ state, savedAt }: { state: SaveState; savedAt: Date | null }) {
+  if (state === "saving") return <span className="flex items-center gap-1.5"><Loader2 size={12} className="animate-spin" />저장 중...</span>;
+  if (state === "saved") return (
+    <span className="flex items-center gap-1.5">
+      <Check size={12} />저장됨
+      {savedAt && <span className="text-foreground/30">· {savedAt.getHours().toString().padStart(2,"0")}:{savedAt.getMinutes().toString().padStart(2,"0")}</span>}
+    </span>
+  );
+  if (state === "error") return <span className="text-red-500">저장 실패</span>;
+  return <span className="text-foreground/30">자동저장</span>;
+}
+
+function Section({ number, label, children }: { number: number; label: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-10">
+      <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border-default">
+        <span className="flex items-center justify-center w-5 h-5 rounded bg-foreground/10 text-foreground text-xs font-semibold">{number}</span>
+        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+      </div>
+      <div className="space-y-5">{children}</div>
+    </section>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-foreground/60 mb-1.5">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      className="w-full px-0 py-1.5 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30" />
+  );
+}
+
+function Textarea({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3}
+      className="w-full px-3 py-2 text-sm bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/30 resize-none transition-colors" />
+  );
+}
+
+type SegOpt = string | { value: string; label: string };
+
+function Segmented({ value, options, onChange }: { value: string; options: SegOpt[]; onChange: (v: string) => void }) {
+  return (
+    <div className="inline-flex items-center gap-1 p-0.5 bg-surface rounded-md">
+      {options.map((opt) => {
+        const v = typeof opt === "string" ? opt : opt.value;
+        const label = typeof opt === "string" ? opt : opt.label;
+        return (
+          <button key={v} type="button" onClick={() => onChange(value === v ? "" : v)}
+            className={`px-2.5 py-1 text-xs rounded transition-colors ${value === v ? "bg-white text-foreground font-medium" : "text-foreground/60 hover:text-foreground"}`}>
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function VisibilitySelect({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
+  return (
+    <div className="relative">
+      <select value={value} onChange={(e) => onChange(e.target.value as Visibility)}
+        className="appearance-none px-3 py-2 pr-8 rounded-md border border-border-default bg-white text-sm hover:bg-surface transition-colors cursor-pointer">
+        {visibilityOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" width="10" height="10" viewBox="0 0 10 6">
+        <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" />
+      </svg>
+    </div>
+  );
+}
+
+function hasContent(c: ReportContent): boolean {
+  return JSON.stringify(c) !== JSON.stringify({ step1: {}, step2: {}, step3: {}, summary: {} });
+}
