@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Search, Shield, ShieldOff, Loader2 } from "lucide-react";
+import { Trash2, Search, Shield, ShieldOff, Loader2, UserX } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Report } from "@/types/report";
 
@@ -79,6 +79,39 @@ export default function AdminClient({
     }
     setReports((prev) => prev.filter((r) => r.id !== id));
     router.refresh();
+  };
+
+  const handleDeleteMember = async (memberId: string, name: string) => {
+    if (memberId === currentUserId) {
+      alert("본인 계정은 삭제할 수 없습니다.");
+      return;
+    }
+    const confirmed = confirm(
+      `'${name}' 멤버를 완전히 삭제할까요?\n\n` +
+        `이 작업은 되돌릴 수 없으며, 이 멤버가 작성한 모든 보고서·댓글·반응도 함께 삭제됩니다.`
+    );
+    if (!confirmed) return;
+    setPendingId(memberId);
+
+    try {
+      const res = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: memberId }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        alert("삭제 실패: " + (json.error ?? "알 수 없는 오류"));
+        return;
+      }
+      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+      // 해당 멤버가 작성한 보고서들도 cascade 되었을 가능성이 높으므로 새로고침
+      router.refresh();
+    } catch (e) {
+      alert("네트워크 오류: " + (e as Error).message);
+    } finally {
+      setPendingId(null);
+    }
   };
 
   const toggleAdmin = async (memberId: string, currentValue: boolean) => {
@@ -169,6 +202,7 @@ export default function AdminClient({
         <MemberTable
           members={filteredMembers}
           onToggleAdmin={toggleAdmin}
+          onDelete={handleDeleteMember}
           pendingId={pendingId}
           currentUserId={currentUserId}
         />
@@ -270,11 +304,13 @@ function ReportTable({
 function MemberTable({
   members,
   onToggleAdmin,
+  onDelete,
   pendingId,
   currentUserId,
 }: {
   members: AdminMember[];
   onToggleAdmin: (id: string, current: boolean) => void;
+  onDelete: (id: string, name: string) => void;
   pendingId: string | null;
   currentUserId: string;
 }) {
@@ -330,22 +366,33 @@ function MemberTable({
                   )}
                 </div>
               </Link>
-              <button
-                type="button"
-                onClick={() => onToggleAdmin(m.id, isAdmin)}
-                disabled={pendingId === m.id || isMe}
-                title={isMe ? "본인은 변경 불가" : isAdmin ? "관리자 해제" : "관리자 지정"}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-xs font-medium text-foreground/70 hover:bg-white transition-colors disabled:opacity-30"
-              >
-                {pendingId === m.id ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : isAdmin ? (
-                  <ShieldOff size={12} strokeWidth={1.75} />
-                ) : (
-                  <Shield size={12} strokeWidth={1.75} />
-                )}
-                {isAdmin ? "관리자 해제" : "관리자 지정"}
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => onToggleAdmin(m.id, isAdmin)}
+                  disabled={pendingId === m.id || isMe}
+                  title={isMe ? "본인은 변경 불가" : isAdmin ? "관리자 해제" : "관리자 지정"}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-xs font-medium text-foreground/70 hover:bg-white transition-colors disabled:opacity-30"
+                >
+                  {pendingId === m.id ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : isAdmin ? (
+                    <ShieldOff size={12} strokeWidth={1.75} />
+                  ) : (
+                    <Shield size={12} strokeWidth={1.75} />
+                  )}
+                  {isAdmin ? "관리자 해제" : "관리자 지정"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(m.id, name)}
+                  disabled={pendingId === m.id || isMe}
+                  title={isMe ? "본인은 삭제 불가" : "멤버 삭제"}
+                  className="inline-flex items-center gap-1 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30"
+                >
+                  <UserX size={14} strokeWidth={1.75} />
+                </button>
+              </div>
             </li>
           );
         })}
