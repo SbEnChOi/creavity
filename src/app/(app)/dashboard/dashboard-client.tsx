@@ -273,7 +273,7 @@ function ReportCard({
 function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const map = {
     private: { Icon: Lock, label: "비공개" },
-    custom: { Icon: UserCheck, label: "멘토" },
+    custom: { Icon: UserCheck, label: "멘토·멘티" },
     club: { Icon: Users, label: "동아리" },
     public: { Icon: Globe, label: "전체" },
   } as const;

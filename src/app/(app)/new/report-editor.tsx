@@ -12,7 +12,7 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 
 const visibilityOptions: { value: Visibility; label: string; Icon: typeof Globe }[] = [
   { value: "private", label: "비공개", Icon: Lock },
-  { value: "custom", label: "멘토만", Icon: UserCheck },
+  { value: "custom", label: "멘토·멘티만", Icon: UserCheck },
   { value: "public", label: "전체 공개", Icon: Globe },
 ];
 
@@ -117,20 +117,30 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     // 자동저장이 다시 draft로 덮어쓰지 않도록 현재 status 갱신
     statusRef.current = "published";
 
-    // 멘토만(custom)인 경우 report_shares 동기화
+    // 멘토·멘티만(custom)인 경우 report_shares 동기화 — 양방향
     if (visibility === "custom") {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: mentors } = await supabase
-          .from("mentor_pairings")
-          .select("mentor_id")
-          .eq("mentee_id", user.id);
+        const [{ data: mentors }, { data: mentees }] = await Promise.all([
+          supabase
+            .from("mentor_pairings")
+            .select("mentor_id")
+            .eq("mentee_id", user.id),
+          supabase
+            .from("mentor_pairings")
+            .select("mentee_id")
+            .eq("mentor_id", user.id),
+        ]);
+
+        const ids = new Set<string>();
+        (mentors ?? []).forEach((m) => ids.add(m.mentor_id));
+        (mentees ?? []).forEach((m) => ids.add(m.mentee_id));
 
         // 기존 공유 정리 후 다시 추가
         await supabase.from("report_shares").delete().eq("report_id", id);
-        const rows = (mentors ?? []).map((m) => ({
+        const rows = Array.from(ids).map((uid) => ({
           report_id: id,
-          user_id: m.mentor_id,
+          user_id: uid,
         }));
         if (rows.length > 0) {
           await supabase.from("report_shares").insert(rows);

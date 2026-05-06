@@ -23,7 +23,7 @@ type ReactionType = (typeof REACTIONS)[number]["type"];
 
 const VISIBILITY_MAP: Record<Visibility, { Icon: typeof Globe; label: string }> = {
   private: { Icon: Lock,      label: "비공개"    },
-  custom:  { Icon: UserCheck, label: "지정 공유" },
+  custom:  { Icon: UserCheck, label: "멘토·멘티만" },
   club:    { Icon: Users,     label: "동아리"    },
   public:  { Icon: Globe,     label: "전체 공개" },
 };
