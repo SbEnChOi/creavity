@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info } from "lucide-react";
+import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -10,6 +10,7 @@ const menuItems = [
   { href: "/dashboard", label: "내 보고서", icon: FileText },
   { href: "/new", label: "새로 작성", icon: PenSquare },
   { href: "/feed", label: "동아리 피드", icon: Users },
+  { href: "/ideas", label: "아이디어 공유", icon: Lightbulb },
   { href: "/settings", label: "환경설정", icon: Settings },
   { href: "/about", label: "정보", icon: Info },
 ];

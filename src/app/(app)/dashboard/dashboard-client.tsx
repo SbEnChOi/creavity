@@ -16,7 +16,13 @@ const statusOptions: { value: StatusFilter; label: string }[] = [
   { value: "private", label: "비공개" },
 ];
 
-export default function DashboardClient({ reports: initialReports }: { reports: Report[] }) {
+export default function DashboardClient({
+  reports: initialReports,
+  reactionMap,
+}: {
+  reports: Report[];
+  reactionMap: Record<string, number>;
+}) {
   const router = useRouter();
   const [reports, setReports] = useState(initialReports);
   const [query, setQuery] = useState("");
@@ -186,6 +192,7 @@ export default function DashboardClient({ reports: initialReports }: { reports: 
             <ReportCard
               key={r.id}
               report={r}
+              reactionCount={reactionMap[r.id] ?? 0}
               onDelete={handleDelete}
               deleting={deletingId === r.id}
             />
@@ -198,14 +205,15 @@ export default function DashboardClient({ reports: initialReports }: { reports: 
 
 function ReportCard({
   report,
+  reactionCount,
   onDelete,
   deleting,
 }: {
   report: Report;
+  reactionCount: number;
   onDelete: (id: string) => void;
   deleting: boolean;
 }) {
-  const reactionCount = 0;
   const description = report.content?.step1?.description ?? report.content?.summary?.thing ?? "";
   const date = new Date(report.updated_at);
   const dateStr = `${date.getMonth() + 1}월 ${date.getDate()}일`;

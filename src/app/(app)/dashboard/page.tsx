@@ -19,5 +19,21 @@ export default async function DashboardPage() {
 
   if (error) console.error("reports fetch error:", error.message);
 
-  return <DashboardClient reports={(reports ?? []) as Report[]} />;
+  const list = (reports ?? []) as Report[];
+  const reportIds = list.map((r) => r.id);
+
+  // 반응 수 집계
+  const { data: reactions } = reportIds.length
+    ? await supabase
+        .from("reactions")
+        .select("report_id")
+        .in("report_id", reportIds)
+    : { data: [] };
+
+  const reactionMap: Record<string, number> = {};
+  (reactions ?? []).forEach((r) => {
+    reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1;
+  });
+
+  return <DashboardClient reports={list} reactionMap={reactionMap} />;
 }
