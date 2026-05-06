@@ -277,8 +277,10 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
         </Field>
       </Section>
 
-      <div className="mt-12 pt-6 border-t border-border-default flex items-center justify-end gap-3">
-        <VisibilitySelect value={visibility} onChange={setVisibility} />
+      <div className="mt-12 pt-6 border-t border-border-default space-y-4">
+        <VisibilityChips value={visibility} onChange={setVisibility} />
+
+        <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={handlePublish}
@@ -289,6 +291,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
             <span className="flex items-center gap-1.5"><Loader2 size={14} className="animate-spin" />발행 중...</span>
           ) : "발행하기"}
         </button>
+        </div>
       </div>
     </div>
   );
@@ -442,16 +445,25 @@ function Segmented({ value, options, onChange }: { value: string; options: SegOp
   );
 }
 
-function VisibilitySelect({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
+function VisibilityChips({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
   return (
-    <div className="relative">
-      <select value={value} onChange={(e) => onChange(e.target.value as Visibility)}
-        className="appearance-none px-3 py-2 pr-8 rounded-md border border-border-default bg-white text-sm hover:bg-surface transition-colors cursor-pointer">
-        {visibilityOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground/40 pointer-events-none" width="10" height="10" viewBox="0 0 10 6">
-        <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-      </svg>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-foreground/40 mr-1">공개 범위</span>
+      {visibilityOptions.map(({ value: v, label, Icon }) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+            value === v
+              ? "bg-foreground text-white"
+              : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+          }`}
+        >
+          <Icon size={11} strokeWidth={1.75} />
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
