@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, UserPlus, UserMinus } from "lucide-react";
@@ -220,23 +221,28 @@ export default function SettingsClient({
                   key={m.id}
                   className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-surface transition-colors"
                 >
-                  <span
-                    className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold shrink-0 ${
-                      AVATAR_BG[color] ?? AVATAR_BG.gray
-                    }`}
+                  <Link
+                    href={`/profile/${m.id}`}
+                    className="flex items-center gap-3 flex-1 min-w-0"
                   >
-                    {name.charAt(0)}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">
-                      {name}
-                    </div>
-                    {m.grade != null && (
-                      <div className="text-xs text-foreground/50">
-                        {m.grade}학년
+                    <span
+                      className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold shrink-0 ${
+                        AVATAR_BG[color] ?? AVATAR_BG.gray
+                      }`}
+                    >
+                      {name.charAt(0)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-foreground truncate hover:underline">
+                        {name}
                       </div>
-                    )}
-                  </div>
+                      {m.grade != null && (
+                        <div className="text-xs text-foreground/50">
+                          {m.grade}학년
+                        </div>
+                      )}
+                    </div>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => toggleMentor(m.id)}

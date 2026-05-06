@@ -168,15 +168,22 @@ export default function ReportDetail({
         </h1>
 
         <div className="flex items-center gap-2.5">
-          <AuthorAvatar profile={report.profiles} />
-          <div className="text-sm text-foreground/60">
-            <span className="font-medium text-foreground">
-              {report.profiles?.display_name ?? "알 수 없음"}
-            </span>
-            {report.profiles?.grade && <span className="ml-1">{report.profiles.grade}학년</span>}
+          <Link
+            href={`/profile/${report.author_id}`}
+            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+          >
+            <AuthorAvatar profile={report.profiles} />
+            <div className="text-sm text-foreground/60">
+              <span className="font-medium text-foreground hover:underline">
+                {report.profiles?.display_name ?? "알 수 없음"}
+              </span>
+              {report.profiles?.grade && <span className="ml-1">{report.profiles.grade}학년</span>}
+            </div>
+          </Link>
+          <span className="text-sm text-foreground/60">
             <span className="mx-1.5">·</span>
             {dateStr}
-          </div>
+          </span>
         </div>
       </header>
 
