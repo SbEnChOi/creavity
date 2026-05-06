@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Plus } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const MAX_SIZE_MB = 5;
@@ -69,51 +69,70 @@ export default function ImageUploadBox({
     onChange(images.filter((_, i) => i !== idx));
   };
 
+  const openPicker = () => inputRef.current?.click();
+  const hasImages = images.length > 0;
+
   return (
     <div className="space-y-3">
-      {/* 업로드 박스 */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          uploadFiles(files);
+          if (inputRef.current) inputRef.current.value = "";
+        }}
+      />
+
+      {/* 큰 정사각형 박스 */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onPaste={handlePaste}
-        onClick={() => inputRef.current?.click()}
+        onClick={!hasImages ? openPicker : undefined}
         tabIndex={0}
-        className={`relative cursor-pointer rounded-lg border-2 border-dashed transition-colors p-8 text-center ${
-          dragOver
-            ? "border-accent bg-accent/5"
-            : "border-border-default bg-surface hover:bg-black/[0.03]"
+        className={`relative aspect-square w-full max-w-md rounded-lg overflow-hidden border-2 transition-colors ${
+          hasImages
+            ? "border-border-default"
+            : `border-dashed cursor-pointer ${
+                dragOver ? "border-accent bg-accent/5" : "border-border-default bg-surface hover:bg-black/[0.03]"
+              }`
         }`}
       >
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            const files = Array.from(e.target.files ?? []);
-            uploadFiles(files);
-            if (inputRef.current) inputRef.current.value = "";
-          }}
-        />
-
-        {uploading ? (
-          <div className="flex flex-col items-center gap-2 text-foreground/60">
-            <Loader2 size={20} className="animate-spin" />
-            <span className="text-xs">업로드 중...</span>
-          </div>
+        {hasImages ? (
+          <ImageGrid images={images} onRemove={removeImage} />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-foreground/60">
-            <Upload size={20} strokeWidth={1.75} />
-            <div className="text-xs">
-              <span className="font-medium text-foreground/80">클릭</span>하거나{" "}
-              <span className="font-medium text-foreground/80">드래그</span>해서
-              사진 첨부
-            </div>
-            <div className="text-[10px] text-foreground/40">
-              복사 + Ctrl+V도 가능 · 5MB 이하
-            </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-foreground/60">
+            {uploading ? (
+              <>
+                <Loader2 size={28} className="animate-spin" />
+                <span className="text-sm">업로드 중...</span>
+              </>
+            ) : (
+              <>
+                <Upload size={28} strokeWidth={1.5} />
+                <div className="text-center">
+                  <div className="text-sm font-medium text-foreground/80 mb-1">사진 첨부</div>
+                  <div className="text-xs text-foreground/50">
+                    클릭 · 드래그 · Ctrl+V로 붙여넣기
+                  </div>
+                  <div className="text-[10px] text-foreground/40 mt-1">
+                    이미지 5MB 이하
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 박스 안에 업로드 진행 인디케이터 (이미지가 있을 때) */}
+        {hasImages && uploading && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white">
+            <Loader2 size={24} className="animate-spin" />
           </div>
         )}
       </div>
@@ -124,25 +143,94 @@ export default function ImageUploadBox({
         </div>
       )}
 
-      {/* 미리보기 그리드 */}
-      {images.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          {images.map((url, idx) => (
-            <div key={url} className="relative group aspect-video bg-surface rounded-md overflow-hidden border border-border-default">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
-                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                title="삭제"
-              >
-                <X size={12} strokeWidth={2} />
-              </button>
-            </div>
-          ))}
+      {/* 추가 버튼 */}
+      {hasImages && (
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={openPicker}
+            disabled={uploading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-sm text-foreground/70 hover:bg-surface transition-colors disabled:opacity-50"
+          >
+            <Plus size={14} strokeWidth={1.75} />
+            사진 추가
+          </button>
+          <span className="text-xs text-foreground/40">
+            {images.length}장 첨부됨
+          </span>
         </div>
       )}
+    </div>
+  );
+}
+
+function ImageGrid({
+  images,
+  onRemove,
+}: {
+  images: string[];
+  onRemove: (idx: number) => void;
+}) {
+  const n = images.length;
+
+  // 1장: 통째로
+  if (n === 1) {
+    return <Tile url={images[0]} onRemove={() => onRemove(0)} />;
+  }
+
+  // 2장: 좌우 분할
+  if (n === 2) {
+    return (
+      <div className="absolute inset-0 grid grid-cols-2 gap-0.5">
+        <Tile url={images[0]} onRemove={() => onRemove(0)} />
+        <Tile url={images[1]} onRemove={() => onRemove(1)} />
+      </div>
+    );
+  }
+
+  // 3장: 큰 1 + 작은 2
+  if (n === 3) {
+    return (
+      <div className="absolute inset-0 grid grid-cols-2 gap-0.5">
+        <Tile url={images[0]} onRemove={() => onRemove(0)} />
+        <div className="grid grid-rows-2 gap-0.5">
+          <Tile url={images[1]} onRemove={() => onRemove(1)} />
+          <Tile url={images[2]} onRemove={() => onRemove(2)} />
+        </div>
+      </div>
+    );
+  }
+
+  // 4장 이상: 2x2 그리드 (5장째부터 +N)
+  return (
+    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-0.5">
+      {images.slice(0, 4).map((url, i) => (
+        <div key={url} className="relative">
+          <Tile url={url} onRemove={() => onRemove(i)} />
+          {i === 3 && n > 4 && (
+            <div className="absolute inset-0 bg-black/55 flex items-center justify-center text-white text-xl font-semibold pointer-events-none">
+              +{n - 4}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Tile({ url, onRemove }: { url: string; onRemove: () => void }) {
+  return (
+    <div className="relative w-full h-full bg-surface group">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" className="w-full h-full object-cover" />
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        title="삭제"
+      >
+        <X size={12} strokeWidth={2} />
+      </button>
     </div>
   );
 }

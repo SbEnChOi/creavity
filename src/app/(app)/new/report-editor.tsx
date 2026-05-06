@@ -218,7 +218,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
           )}
         </Field>
         <Field label="설명">
-          <Textarea value={content.step1?.description ?? ""} onChange={(v) => updateStep("step1", { description: v })} placeholder="마크다운 지원 — **굵게**, *기울임*, [링크](url), - 리스트, # 제목" />
+          <Textarea value={content.step1?.description ?? ""} onChange={(v) => updateStep("step1", { description: v })} placeholder="이 기술/아이디어를 한두 문단으로 설명해주세요" />
         </Field>
       </Section>
 

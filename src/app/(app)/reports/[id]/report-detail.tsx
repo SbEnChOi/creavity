@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
   ArrowLeft, Globe, Lock, Users, UserCheck,
   Edit2, Lightbulb, HelpCircle, HandMetal, Microscope,
@@ -344,8 +342,8 @@ function Prose({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="text-sm">
       <p className="text-xs font-medium text-foreground/40 mb-1">{label}</p>
-      <div className="px-4 py-3 rounded-md bg-surface text-foreground/85 leading-relaxed prose prose-sm max-w-none prose-p:my-2 prose-headings:mt-3 prose-headings:mb-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0 prose-a:text-accent prose-a:no-underline hover:prose-a:underline prose-code:bg-black/5 prose-code:px-1 prose-code:rounded prose-pre:bg-black/5">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+      <div className="px-4 py-3 rounded-md bg-surface text-foreground/85 whitespace-pre-wrap leading-relaxed">
+        {value}
       </div>
     </div>
   );
