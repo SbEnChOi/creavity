@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, PenSquare, Users, Settings, LogOut } from "lucide-react";
+import { FileText, PenSquare, Users, Settings, LogOut, Shield } from "lucide-react";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -29,6 +29,7 @@ type Profile = {
   id: string;
   display_name: string | null;
   avatar_color: string | null;
+  is_admin?: boolean | null;
   club_id: string | null;
   clubs?: ClubRel;
 } | null;
@@ -65,7 +66,12 @@ export default function Sidebar({ profile }: { profile: Profile }) {
 
       <nav className="flex-1 px-2 py-2">
         <ul className="space-y-0.5">
-          {menuItems.map(({ href, label, icon: Icon }) => {
+          {[
+            ...menuItems,
+            ...(profile?.is_admin
+              ? [{ href: "/admin", label: "관리자", icon: Shield }]
+              : []),
+          ].map(({ href, label, icon: Icon }) => {
             const active =
               href === "/dashboard"
                 ? pathname === "/dashboard"
