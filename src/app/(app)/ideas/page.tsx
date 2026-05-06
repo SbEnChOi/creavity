@@ -11,7 +11,7 @@ export default async function IdeasPage() {
 
   const { data: ideas } = await supabase
     .from("ideas")
-    .select("id, author_id, title, body, created_at")
+    .select("id, author_id, title, body, visibility, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lightbulb, Loader2, Send, Sparkles, Trash2 } from "lucide-react";
+import { Globe, Lightbulb, Loader2, Lock, Send, Sparkles, Trash2, UserCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const AVATAR_BG: Record<string, string> = {
@@ -15,13 +15,30 @@ const AVATAR_BG: Record<string, string> = {
   purple: "bg-purple-100 text-purple-700",
 };
 
+export type IdeaVisibility = "public" | "private" | "mentor_circle";
+
 export type IdeaRow = {
   id: string;
   author_id: string;
   title: string;
   body: string | null;
+  visibility: IdeaVisibility;
   created_at: string;
 };
+
+const VISIBILITY_OPTIONS: {
+  value: IdeaVisibility;
+  label: string;
+  Icon: typeof Globe;
+}[] = [
+  { value: "public", label: "전체 공개", Icon: Globe },
+  { value: "mentor_circle", label: "멘토·멘티만", Icon: UserCheck },
+  { value: "private", label: "비공개", Icon: Lock },
+];
+
+function visibilityMeta(v: IdeaVisibility) {
+  return VISIBILITY_OPTIONS.find((o) => o.value === v) ?? VISIBILITY_OPTIONS[0];
+}
 
 export type IdeaAuthor = {
   id: string;
@@ -44,6 +61,7 @@ export default function IdeasClient({
   const [ideas, setIdeas] = useState(initialIdeas);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [visibility, setVisibility] = useState<IdeaVisibility>("public");
   const [submitting, setSubmitting] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +78,9 @@ export default function IdeasClient({
         author_id: currentUserId,
         title: title.trim(),
         body: body.trim() || null,
+        visibility,
       })
-      .select("id, author_id, title, body, created_at")
+      .select("id, author_id, title, body, visibility, created_at")
       .single();
 
     setSubmitting(false);
@@ -120,6 +139,26 @@ export default function IdeasClient({
           className="w-full px-3 py-2 text-sm bg-white rounded-md border border-transparent focus:border-foreground/20 outline-none placeholder:text-foreground/30 resize-none"
         />
 
+        {/* 공개 범위 */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-foreground/40 mr-1">공개 범위</span>
+          {VISIBILITY_OPTIONS.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setVisibility(value)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+                visibility === value
+                  ? "bg-foreground text-white"
+                  : "bg-white text-foreground/70 hover:bg-black/[0.04]"
+              }`}
+            >
+              <Icon size={11} strokeWidth={1.75} />
+              {label}
+            </button>
+          ))}
+        </div>
+
         {error && (
           <div className="text-xs text-red-600 px-3 py-2 rounded-md bg-red-50 border border-red-200">
             {error}
@@ -167,6 +206,7 @@ export default function IdeasClient({
               const isMine = idea.author_id === currentUserId;
               const date = new Date(idea.created_at);
               const dateStr = formatDate(date);
+              const vis = visibilityMeta(idea.visibility);
 
               return (
                 <li
@@ -198,22 +238,26 @@ export default function IdeasClient({
                     </p>
                   )}
 
-                  <div className="flex items-center gap-1.5 text-xs text-foreground/50">
+                  <div className="flex items-center justify-between gap-2 text-xs text-foreground/50">
                     <Link
                       href={`/profile/${idea.author_id}`}
-                      className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                      className="flex items-center gap-1.5 hover:text-foreground transition-colors min-w-0"
                     >
                       <span
-                        className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold ${
+                        className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-semibold shrink-0 ${
                           AVATAR_BG[color] ?? AVATAR_BG.gray
                         }`}
                       >
                         {name.charAt(0)}
                       </span>
-                      <span className="hover:underline">{name}</span>
+                      <span className="hover:underline truncate">{name}</span>
+                      <span className="mx-1">·</span>
+                      <span>{dateStr}</span>
                     </Link>
-                    <span className="mx-1">·</span>
-                    <span>{dateStr}</span>
+                    <span className="inline-flex items-center gap-1 shrink-0">
+                      <vis.Icon size={11} strokeWidth={1.75} />
+                      {vis.label}
+                    </span>
                   </div>
                 </li>
               );
