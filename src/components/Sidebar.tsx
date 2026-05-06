@@ -56,10 +56,10 @@ export default function Sidebar({ profile }: { profile: Profile }) {
     <aside className="w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default">
       <div className="px-5 pt-6 pb-4">
         <Link href="/dashboard" className="inline-flex items-center gap-2">
-          <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-white text-base font-bold">
-            창
+          <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-white text-sm font-bold">
+            C
           </span>
-          <span className="text-sm font-semibold text-foreground">창의력</span>
+          <span className="text-sm font-semibold text-foreground">Creavy</span>
         </Link>
       </div>
 

@@ -9,6 +9,7 @@ export type ReportContent = {
     difficulty?: "casual" | "searched" | "deep" | string;
     source?: string;                        // 출처 이름 (유튜브, 논문 등)
     url?: string;                           // 출처 링크
+    images?: string[];                      // 첨부 이미지 URL 배열
     description?: string;
   };
   step2?: {

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2, Globe, Lock, UserCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { FIELD_OPTIONS } from "@/lib/constants";
+import ImageUploadBox from "@/components/ImageUploadBox";
 import type { Report, ReportContent, Visibility } from "@/types/report";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -21,6 +22,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
 
   const [reportId, setReportId] = useState<string | null>(initialReport?.id ?? null);
   const [title, setTitle] = useState(initialReport?.title ?? "");
+  const [edition, setEdition] = useState<number | "">(initialReport?.edition ?? "");
   const [content, setContent] = useState<ReportContent>(
     initialReport?.content ?? { step1: {}, step2: {}, step3: {}, summary: {} }
   );
@@ -31,6 +33,11 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
+  }, [supabase]);
 
   const reportIdRef = useRef<string | null>(null);
   const firstRenderRef = useRef(true);
@@ -43,7 +50,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     const timer = setTimeout(() => doSave({ asDraft: true }), 2000);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, content, visibility]);
+  }, [title, edition, content, visibility]);
 
   const initialStatus = initialReport?.status ?? "draft";
   const isEditingPublished = initialStatus === "published";
@@ -52,6 +59,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     title: title || "제목 없음",
     content,
     visibility,
+    edition: edition === "" ? null : Number(edition),
     field: content.step1?.field ?? null,   // 분야 컬럼 (필터용)
     ...extra,
   });
@@ -151,6 +159,18 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
         </div>
       )}
 
+      <div className="flex items-baseline gap-3 mb-2">
+        <input
+          type="number"
+          min={1}
+          value={edition}
+          onChange={(e) => setEdition(e.target.value === "" ? "" : Number(e.target.value))}
+          placeholder="차수"
+          className="w-20 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30 py-1"
+        />
+        <span className="text-xs text-foreground/40">차수 (선택)</span>
+      </div>
+
       <input
         type="text"
         value={title}
@@ -186,8 +206,19 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
         <Field label="출처 링크">
           <Input value={content.step1?.url ?? ""} onChange={(v) => updateStep("step1", { url: v })} placeholder="https://..." />
         </Field>
+        <Field label="사진">
+          {userId ? (
+            <ImageUploadBox
+              userId={userId}
+              images={content.step1?.images ?? []}
+              onChange={(imgs) => updateStep("step1", { images: imgs })}
+            />
+          ) : (
+            <div className="text-xs text-foreground/40 px-3 py-2">로그인 정보를 불러오는 중...</div>
+          )}
+        </Field>
         <Field label="설명">
-          <Textarea value={content.step1?.description ?? ""} onChange={(v) => updateStep("step1", { description: v })} placeholder="이 기술/아이디어를 한두 문단으로 설명해주세요" />
+          <Textarea value={content.step1?.description ?? ""} onChange={(v) => updateStep("step1", { description: v })} placeholder="마크다운 지원 — **굵게**, *기울임*, [링크](url), - 리스트, # 제목" />
         </Field>
       </Section>
 

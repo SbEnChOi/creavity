@@ -90,11 +90,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground text-white text-xl font-bold mb-5">
-            창
+            C
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-1.5">창의력</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-1.5">Creavy · 크래비</h1>
           <p className="text-sm text-foreground/60">
-            동아리 사고력 플랫폼에 오신 것을 환영합니다
+            동아리원과 함께 생각을 나누는 보고서 플랫폼
           </p>
         </div>
 
