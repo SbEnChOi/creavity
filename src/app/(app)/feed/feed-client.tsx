@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search, Globe, UserCheck, Users, Heart, X } from "lucide-react";
-import type { Report } from "@/types/report";
+import { getReportFields, type Report } from "@/types/report";
 
 const AVATAR_BG: Record<string, string> = {
   gray: "bg-gray-200 text-gray-700",
@@ -87,7 +87,7 @@ export default function FeedClient({
         const author = authorMap[r.author_id];
         const haystack = [
           r.title,
-          r.field,
+          ...getReportFields(r),
           r.content?.step1?.name,
           r.content?.step1?.description,
           r.content?.step2?.principle,
@@ -305,11 +305,11 @@ function FeedCard({
           {report.edition != null && (
             <span className="text-foreground/50 font-medium">{report.edition}차</span>
           )}
-          {report.field && (
-            <span className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
-              {report.field}
+          {getReportFields(report).map((f) => (
+            <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
+              {f}
             </span>
-          )}
+          ))}
           {relation === "mentor" && (
             <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">멘토</span>
           )}

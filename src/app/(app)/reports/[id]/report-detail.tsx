@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Globe, Lock, Users, UserCheck,
-  Edit2, Lightbulb, HelpCircle, HandMetal, Microscope,
+  Edit2, Lightbulb, HelpCircle, HandMetal, Microscope, Printer,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Report, ReportContent, Visibility } from "@/types/report";
@@ -126,9 +126,9 @@ export default function ReportDetail({
   };
 
   return (
-    <div className="px-10 py-10 max-w-3xl">
+    <div className="px-10 py-10 max-w-3xl print:px-0 print:py-0 print:max-w-none">
       {/* 뒤로가기 */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 print:hidden">
         <button
           type="button"
           onClick={() => router.back()}
@@ -137,15 +137,26 @@ export default function ReportDetail({
           <ArrowLeft size={15} strokeWidth={1.75} />
           뒤로
         </button>
-        {isOwner && (
-          <Link
-            href={`/reports/${report.id}/edit`}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            title="PDF로 저장 또는 인쇄"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-sm hover:bg-surface transition-colors"
           >
-            <Edit2 size={14} strokeWidth={1.75} />
-            수정
-          </Link>
-        )}
+            <Printer size={14} strokeWidth={1.75} />
+            PDF · 인쇄
+          </button>
+          {isOwner && (
+            <Link
+              href={`/reports/${report.id}/edit`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-sm hover:bg-surface transition-colors"
+            >
+              <Edit2 size={14} strokeWidth={1.75} />
+              수정
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* 헤더 */}
@@ -154,9 +165,14 @@ export default function ReportDetail({
           {report.edition != null && (
             <span className="font-medium">{report.edition}차</span>
           )}
-          {c.step1?.field && (
-            <span className="px-1.5 py-0.5 rounded bg-surface">{c.step1.field}</span>
-          )}
+          {(c.step1?.fields && c.step1.fields.length > 0
+            ? c.step1.fields
+            : c.step1?.field
+            ? [c.step1.field]
+            : []
+          ).map((f) => (
+            <span key={f} className="px-1.5 py-0.5 rounded bg-surface">{f}</span>
+          ))}
           <span className="flex items-center gap-1">
             <vis.Icon size={12} strokeWidth={1.75} />
             {vis.label}
@@ -228,7 +244,7 @@ export default function ReportDetail({
       )}
 
       {/* ─── 반응 ─── */}
-      <div className="mt-12 pt-8 border-t border-border-default">
+      <div className="mt-12 pt-8 border-t border-border-default print:hidden">
         <p className="text-xs font-medium text-foreground/50 mb-3">반응</p>
         <div className="flex flex-wrap gap-2">
           {REACTIONS.map(({ type, emoji, label }) => {
@@ -259,7 +275,7 @@ export default function ReportDetail({
       </div>
 
       {/* ─── 댓글 ─── */}
-      <div className="mt-10 pb-16">
+      <div className="mt-10 pb-16 print:hidden">
         <p className="text-xs font-medium text-foreground/50 mb-4">
           댓글 {comments.length > 0 && <span>({comments.length})</span>}
         </p>

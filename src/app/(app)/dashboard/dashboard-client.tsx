@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Heart, Globe, Lock, Users, UserCheck, X, Trash2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Report, Visibility } from "@/types/report";
+import { getReportFields, type Report, type Visibility } from "@/types/report";
 
 type StatusFilter = "all" | "published" | "draft" | "private";
 
@@ -38,10 +38,10 @@ export default function DashboardClient({ reports: initialReports }: { reports: 
     router.refresh();
   };
 
-  // 실제 보고서들에서 분야 목록 추출 (중복 제거)
+  // 실제 보고서들에서 분야 목록 추출 (중복 제거, 복수 분야 지원)
   const availableFields = useMemo(() => {
-    const fields = reports.map((r) => r.field).filter((f): f is string => !!f);
-    return Array.from(new Set(fields)).sort();
+    const all = reports.flatMap((r) => getReportFields(r));
+    return Array.from(new Set(all)).sort();
   }, [reports]);
 
   const filtered = useMemo(() => {
@@ -49,13 +49,13 @@ export default function DashboardClient({ reports: initialReports }: { reports: 
       if (statusFilter === "published" && r.status !== "published") return false;
       if (statusFilter === "draft" && r.status !== "draft") return false;
       if (statusFilter === "private" && r.visibility !== "private") return false;
-      if (fieldFilter && r.field !== fieldFilter) return false;
+      if (fieldFilter && !getReportFields(r).includes(fieldFilter)) return false;
 
       if (query.trim()) {
         const q = query.trim().toLowerCase();
         const haystack = [
           r.title,
-          r.field,
+          ...getReportFields(r),
           r.content?.step1?.description,
           r.content?.summary?.thing,
         ]
@@ -229,11 +229,11 @@ function ReportCard({
         {report.edition != null && (
           <span className="text-foreground/50 font-medium">{report.edition}차</span>
         )}
-        {report.field && (
-          <span className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
-            {report.field}
+        {getReportFields(report).map((f) => (
+          <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
+            {f}
           </span>
-        )}
+        ))}
         {report.status === "draft" && (
           <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">작성중</span>
         )}

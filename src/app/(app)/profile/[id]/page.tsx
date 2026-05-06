@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Globe, UserCheck, Users, Heart } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Report } from "@/types/report";
+import { getReportFields, type Report } from "@/types/report";
 import MentorButton from "./mentor-button";
 
 export const dynamic = "force-dynamic";
@@ -186,11 +186,11 @@ function ReportCard({
               {report.edition}차
             </span>
           )}
-          {report.field && (
-            <span className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
-              {report.field}
+          {getReportFields(report).map((f) => (
+            <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
+              {f}
             </span>
-          )}
+          ))}
         </div>
 
         <h3 className="text-base font-semibold text-foreground mb-1.5 line-clamp-1">

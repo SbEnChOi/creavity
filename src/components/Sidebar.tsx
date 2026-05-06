@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, PenSquare, Users, Settings, LogOut, Shield } from "lucide-react";
+import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info } from "lucide-react";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -11,6 +11,7 @@ const menuItems = [
   { href: "/new", label: "새로 작성", icon: PenSquare },
   { href: "/feed", label: "동아리 피드", icon: Users },
   { href: "/settings", label: "환경설정", icon: Settings },
+  { href: "/about", label: "정보", icon: Info },
 ];
 
 // avatar_color: 스키마 기반 색상 문자열 (gray, blue, green …)
@@ -54,7 +55,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   };
 
   return (
-    <aside className="w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default">
+    <aside className="w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden">
       <div className="px-5 pt-6 pb-4">
         <Link href="/dashboard" className="inline-flex items-center gap-2">
           <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-white text-sm font-bold">

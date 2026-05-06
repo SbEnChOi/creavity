@@ -41,6 +41,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
 
   const reportIdRef = useRef<string | null>(null);
   const firstRenderRef = useRef(true);
+  const statusRef = useRef<"draft" | "published">(initialReport?.status ?? "draft");
 
   useEffect(() => { reportIdRef.current = reportId; }, [reportId]);
 
@@ -52,15 +53,12 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, edition, content, visibility]);
 
-  const initialStatus = initialReport?.status ?? "draft";
-  const isEditingPublished = initialStatus === "published";
-
   const buildPayload = (extra?: Record<string, unknown>) => ({
     title: title || "제목 없음",
     content,
     visibility,
     edition: edition === "" ? null : Number(edition),
-    field: content.step1?.field ?? null,   // 분야 컬럼 (필터용)
+    field: (content.step1?.fields?.[0] ?? content.step1?.field) ?? null, // 첫 번째 분야를 필터용 컬럼에 저장
     ...extra,
   });
 
@@ -69,8 +67,8 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     setSaveState("saving");
     setSaveError(null);
 
-    // 자동저장 시 이미 발행된 보고서는 status 유지, 신규는 draft
-    const status = asDraft ? (isEditingPublished ? "published" : "draft") : "published";
+    // 자동저장은 현재 status 유지, 명시적 발행은 published
+    const status = asDraft ? statusRef.current : "published";
     const payload = buildPayload({ status });
     const currentId = reportIdRef.current;
 
@@ -115,6 +113,9 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
       .eq("id", id);
 
     if (error) { setPublishing(false); setSaveError(error.message); return; }
+
+    // 자동저장이 다시 draft로 덮어쓰지 않도록 현재 status 갱신
+    statusRef.current = "published";
 
     // 멘토만(custom)인 경우 report_shares 동기화
     if (visibility === "custom") {
@@ -191,7 +192,10 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
           <Input value={content.step1?.name ?? ""} onChange={(v) => updateStep("step1", { name: v })} placeholder="기술/아이디어 이름" />
         </Field>
         <Field label="분야">
-          <FieldSelect value={content.step1?.field ?? ""} onChange={(v) => updateStep("step1", { field: v })} />
+          <FieldSelect
+            values={content.step1?.fields ?? (content.step1?.field ? [content.step1.field] : [])}
+            onChange={(v) => updateStep("step1", { fields: v, field: v[0] })}
+          />
         </Field>
         <Field label="발견 난이도">
           <Segmented
@@ -292,46 +296,80 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
 
 // ─── 분야 선택 ────────────────────────────────────────────────────────────────
 
-function FieldSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const isCustom = value !== "" && !(FIELD_OPTIONS as readonly string[]).includes(value);
-  const [showCustom, setShowCustom] = useState(isCustom);
-  const [customVal, setCustomVal] = useState(isCustom ? value : "");
+function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: string[]) => void }) {
+  const presetValues = values.filter((v) => (FIELD_OPTIONS as readonly string[]).includes(v));
+  const customValues = values.filter((v) => !(FIELD_OPTIONS as readonly string[]).includes(v));
+  const [customInput, setCustomInput] = useState("");
+  const valueSet = new Set(values);
 
-  const handleSelect = (opt: string) => {
-    if (opt === "__other__") {
-      setShowCustom(true);
-      onChange(customVal);
+  const togglePreset = (opt: string) => {
+    if (valueSet.has(opt)) {
+      onChange(values.filter((v) => v !== opt));
     } else {
-      setShowCustom(false);
-      onChange(opt === value ? "" : opt);
+      onChange([...values, opt]);
     }
+  };
+
+  const addCustom = () => {
+    const v = customInput.trim();
+    if (!v || valueSet.has(v)) { setCustomInput(""); return; }
+    onChange([...values, v]);
+    setCustomInput("");
+  };
+
+  const removeCustom = (v: string) => {
+    onChange(values.filter((x) => x !== v));
   };
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
-        {FIELD_OPTIONS.map((opt) => (
-          <button key={opt} type="button" onClick={() => handleSelect(opt)}
-            className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
-              !showCustom && value === opt ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
-            }`}>
-            {opt}
-          </button>
-        ))}
-        <button type="button" onClick={() => handleSelect("__other__")}
-          className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
-            showCustom ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
-          }`}>
-          기타
+        {FIELD_OPTIONS.map((opt) => {
+          const active = presetValues.includes(opt);
+          return (
+            <button key={opt} type="button" onClick={() => togglePreset(opt)}
+              className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
+                active ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+              }`}>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+
+      {customValues.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {customValues.map((v) => (
+            <button key={v} type="button" onClick={() => removeCustom(v)}
+              title="클릭해서 제거"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-foreground text-white hover:bg-foreground/85"
+            >
+              {v} <span className="opacity-60">×</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+          }}
+          placeholder="기타 직접 입력 후 Enter 또는 추가"
+          className="flex-1 px-0 py-1.5 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30"
+        />
+        <button
+          type="button"
+          onClick={addCustom}
+          disabled={!customInput.trim()}
+          className="text-xs text-foreground/60 hover:text-foreground disabled:opacity-30"
+        >
+          + 추가
         </button>
       </div>
-      {showCustom && (
-        <input autoFocus type="text" value={customVal}
-          onChange={(e) => { setCustomVal(e.target.value); onChange(e.target.value); }}
-          placeholder="직접 입력..."
-          className="w-full px-0 py-1.5 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30"
-        />
-      )}
     </div>
   );
 }
