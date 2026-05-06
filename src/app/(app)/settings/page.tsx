@@ -1,12 +1,36 @@
-export default function SettingsPage() {
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import SettingsClient from "./settings-client";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [{ data: me }, { data: members }, { data: mentors }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, display_name, avatar_color, grade")
+      .eq("id", user!.id)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id, display_name, avatar_color, grade")
+      .order("display_name", { ascending: true }),
+    supabase
+      .from("mentor_pairings")
+      .select("mentor_id")
+      .eq("mentee_id", user!.id),
+  ]);
+
   return (
-    <div className="px-10 py-12 max-w-3xl">
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold text-foreground mb-1">환경설정</h1>
-        <p className="text-sm text-foreground/60">
-          짝선배·짝후배, 동아리 멤버를 관리합니다.
-        </p>
-      </header>
-    </div>
+    <SettingsClient
+      currentUserId={user!.id}
+      me={me ?? { id: user!.id, display_name: null, avatar_color: null, grade: null }}
+      members={(members ?? []).filter((m) => m.id !== user!.id)}
+      mentorIds={(mentors ?? []).map((m) => m.mentor_id)}
+    />
   );
 }

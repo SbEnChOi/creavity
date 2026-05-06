@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search, Plus, Heart, Globe, Lock, Users, UserCheck, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Plus, Heart, Globe, Lock, Users, UserCheck, X, Trash2 } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { Report, Visibility } from "@/types/report";
 
 type StatusFilter = "all" | "published" | "draft" | "private";
@@ -14,10 +16,27 @@ const statusOptions: { value: StatusFilter; label: string }[] = [
   { value: "private", label: "비공개" },
 ];
 
-export default function DashboardClient({ reports }: { reports: Report[] }) {
+export default function DashboardClient({ reports: initialReports }: { reports: Report[] }) {
+  const router = useRouter();
+  const [reports, setReports] = useState(initialReports);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [fieldFilter, setFieldFilter] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("이 보고서를 삭제할까요? 되돌릴 수 없습니다.")) return;
+    setDeletingId(id);
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.from("reports").delete().eq("id", id);
+    setDeletingId(null);
+    if (error) {
+      alert("삭제 실패: " + error.message);
+      return;
+    }
+    setReports((prev) => prev.filter((r) => r.id !== id));
+    router.refresh();
+  };
 
   // 실제 보고서들에서 분야 목록 추출 (중복 제거)
   const availableFields = useMemo(() => {
@@ -164,7 +183,12 @@ export default function DashboardClient({ reports }: { reports: Report[] }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((r) => (
-            <ReportCard key={r.id} report={r} />
+            <ReportCard
+              key={r.id}
+              report={r}
+              onDelete={handleDelete}
+              deleting={deletingId === r.id}
+            />
           ))}
         </div>
       )}
@@ -172,18 +196,36 @@ export default function DashboardClient({ reports }: { reports: Report[] }) {
   );
 }
 
-function ReportCard({ report }: { report: Report }) {
-  const reactionCount = 0; // TODO: 보고서 상세 페이지 구현 시 집계
+function ReportCard({
+  report,
+  onDelete,
+  deleting,
+}: {
+  report: Report;
+  onDelete: (id: string) => void;
+  deleting: boolean;
+}) {
+  const reactionCount = 0;
   const description = report.content?.step1?.description ?? report.content?.summary?.thing ?? "";
   const date = new Date(report.updated_at);
   const dateStr = `${date.getMonth() + 1}월 ${date.getDate()}일`;
 
   return (
-    <Link
-      href={`/reports/${report.id}`}
-      className="group block p-4 rounded-lg border border-border-default hover:bg-surface transition-colors"
-    >
-      <div className="flex items-center gap-2 mb-2.5 text-xs flex-wrap">
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(report.id); }}
+        disabled={deleting}
+        title="삭제"
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+      >
+        <Trash2 size={14} strokeWidth={1.75} />
+      </button>
+      <Link
+        href={`/reports/${report.id}`}
+        className="block p-4 rounded-lg border border-border-default hover:bg-surface transition-colors"
+      >
+      <div className="flex items-center gap-2 mb-2.5 text-xs flex-wrap pr-6">
         {report.edition != null && (
           <span className="text-foreground/50 font-medium">{report.edition}차</span>
         )}
@@ -215,14 +257,15 @@ function ReportCard({ report }: { report: Report }) {
           </span>
         </div>
       </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
 function VisibilityBadge({ visibility }: { visibility: Visibility }) {
   const map = {
     private: { Icon: Lock, label: "비공개" },
-    custom: { Icon: UserCheck, label: "지정" },
+    custom: { Icon: UserCheck, label: "멘토" },
     club: { Icon: Users, label: "동아리" },
     public: { Icon: Globe, label: "전체" },
   } as const;

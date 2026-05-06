@@ -2,30 +2,31 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Globe, Lock, Users, UserCheck } from "lucide-react";
+import { Check, Loader2, Globe, Lock, UserCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { FIELD_OPTIONS } from "@/lib/constants";
-import type { ReportContent, Visibility } from "@/types/report";
+import type { Report, ReportContent, Visibility } from "@/types/report";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 const visibilityOptions: { value: Visibility; label: string; Icon: typeof Globe }[] = [
   { value: "private", label: "비공개", Icon: Lock },
-  { value: "custom", label: "지정한 사람", Icon: UserCheck },
-  { value: "club", label: "동아리", Icon: Users },
+  { value: "custom", label: "멘토만", Icon: UserCheck },
   { value: "public", label: "전체 공개", Icon: Globe },
 ];
 
-export default function ReportEditor() {
+export default function ReportEditor({ initialReport }: { initialReport?: Report } = {}) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-  const [reportId, setReportId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState<ReportContent>({
-    step1: {}, step2: {}, step3: {}, summary: {},
-  });
-  const [visibility, setVisibility] = useState<Visibility>("private");
+  const [reportId, setReportId] = useState<string | null>(initialReport?.id ?? null);
+  const [title, setTitle] = useState(initialReport?.title ?? "");
+  const [content, setContent] = useState<ReportContent>(
+    initialReport?.content ?? { step1: {}, step2: {}, step3: {}, summary: {} }
+  );
+  const [visibility, setVisibility] = useState<Visibility>(
+    (initialReport?.visibility ?? "private") as Visibility
+  );
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -44,12 +45,14 @@ export default function ReportEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, content, visibility]);
 
+  const initialStatus = initialReport?.status ?? "draft";
+  const isEditingPublished = initialStatus === "published";
+
   const buildPayload = (extra?: Record<string, unknown>) => ({
     title: title || "제목 없음",
     content,
     visibility,
     field: content.step1?.field ?? null,   // 분야 컬럼 (필터용)
-    status: "draft" as const,
     ...extra,
   });
 
@@ -58,7 +61,9 @@ export default function ReportEditor() {
     setSaveState("saving");
     setSaveError(null);
 
-    const payload = buildPayload({ status: asDraft ? "draft" : "published" });
+    // 자동저장 시 이미 발행된 보고서는 status 유지, 신규는 draft
+    const status = asDraft ? (isEditingPublished ? "published" : "draft") : "published";
+    const payload = buildPayload({ status });
     const currentId = reportIdRef.current;
 
     if (currentId) {
@@ -101,8 +106,30 @@ export default function ReportEditor() {
       .update({ status: "published", published_at: new Date().toISOString(), visibility })
       .eq("id", id);
 
+    if (error) { setPublishing(false); setSaveError(error.message); return; }
+
+    // 멘토만(custom)인 경우 report_shares 동기화
+    if (visibility === "custom") {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: mentors } = await supabase
+          .from("mentor_pairings")
+          .select("mentor_id")
+          .eq("mentee_id", user.id);
+
+        // 기존 공유 정리 후 다시 추가
+        await supabase.from("report_shares").delete().eq("report_id", id);
+        const rows = (mentors ?? []).map((m) => ({
+          report_id: id,
+          user_id: m.mentor_id,
+        }));
+        if (rows.length > 0) {
+          await supabase.from("report_shares").insert(rows);
+        }
+      }
+    }
+
     setPublishing(false);
-    if (error) { setSaveError(error.message); return; }
     router.refresh();
     router.push("/dashboard");
   };
