@@ -27,8 +27,8 @@ type ReactionType = (typeof REACTIONS)[number]["type"];
 
 const VISIBILITY_MAP: Record<Visibility, { Icon: typeof Globe; label: string }> = {
   private: { Icon: Lock,      label: "비공개"    },
-  custom:  { Icon: UserCheck, label: "멘토·멘티만" },
-  club:    { Icon: Users,     label: "동아리"    },
+  custom:  { Icon: UserCheck, label: "연결된 사용자만" },
+  club:    { Icon: Users,     label: "공유 공간"    },
   public:  { Icon: Globe,     label: "전체 공개" },
 };
 
@@ -198,7 +198,6 @@ export default function ReportDetail({
               <span className="font-medium text-foreground hover:underline">
                 {report.profiles?.display_name ?? "알 수 없음"}
               </span>
-              {report.profiles?.grade && <span className="ml-1">{report.profiles.grade}학년</span>}
             </div>
           </Link>
           <span className="text-base text-foreground/75">
@@ -240,11 +239,10 @@ export default function ReportDetail({
         <Prose label="이유"         value={c.step3?.feasibility_reason} />
       </ContentSection>
 
-      {/* ─── Step 4: 한 줄 정리 ─── */}
-      {(c.summary?.thing || c.summary?.problem) && (
-        <ContentSection number={4} label="한 줄 정리">
-          <Row label="무엇을"        value={c.summary?.thing} />
-          <Row label="해결하려는 문제" value={c.summary?.problem} />
+      {/* ─── Step 4: 아이디어 요약 ─── */}
+      {(c.summary?.overview || c.summary?.thing || c.summary?.problem) && (
+        <ContentSection number={4} label="아이디어 요약">
+          {c.summary?.overview ? <Prose label="전체 요약" value={c.summary.overview}/> : <><Row label="핵심 아이디어" value={c.summary?.thing} /><Row label="해결하려는 문제" value={c.summary?.problem} /></>}
         </ContentSection>
       )}
 

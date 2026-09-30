@@ -32,7 +32,7 @@ const VISIBILITY_OPTIONS: {
   Icon: typeof Globe;
 }[] = [
   { value: "public", label: "전체 공개", Icon: Globe },
-  { value: "mentor_circle", label: "멘토·멘티만", Icon: UserCheck },
+  { value: "mentor_circle", label: "연결된 사용자만", Icon: UserCheck },
   { value: "private", label: "비공개", Icon: Lock },
 ];
 

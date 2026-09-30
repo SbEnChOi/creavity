@@ -1,7 +1,7 @@
 import { transition as advance, type FlowDependencies } from "./flow";
 import { z } from "zod";
 import { AiError, structured } from "./provider";
-import { dialogueMode, draftSchema, nextTopic, questionSchema, safeUrl, TOPICS, topicLabels, REFINEMENT_PRESETS, type AiRequest, type Answer, type Draft, type Question, type SessionState, type Topic } from "./schema";
+import { dialogueMode, draftGenerationSchema, nextTopic, questionSchema, safeUrl, TOPICS, topicLabels, REFINEMENT_PRESETS, type AiRequest, type Answer, type Draft, type Question, type SessionState, type Topic } from "./schema";
 import { researchIdea } from "./research";
 import { AI_WRITING_STYLE } from "./style";
 import { modeInstructions } from "./modes";
@@ -34,9 +34,12 @@ clarification이 있으면 더 쉽고 구체적인 예로 재질문한다. 한�
 
 export async function makeDraft(state: SessionState, feedback = ""): Promise<Draft> {
   if (!state.confirmed || nextTopic(state.answers)) throw new AiError("필요한 답변과 방향 확인이 먼저 필요합니다.", 400);
-  const draft = await structured("idea_report", draftSchema, `${contract}
+  const draft = await structured("idea_report", draftGenerationSchema, `${contract}
 ${modeInstructions(state)}
-사용자가 확인한 방향으로 기존 양식(발견, 분석, 확장, 한 줄 정리)에 맞는 편집 가능한 초안을 만든다.
+사용자가 확인한 방향으로 기존 양식(발견, 분석, 확장, 아이디어 요약)에 맞는 편집 가능한 초안을 만든다.
+summary.overview는 대화 없이 처음 읽는 사람도 이해할 수 있는 독립적인 2~4문장 요약이다. 아이디어가 무엇인지, 어떤 상황이나 필요에서 쓰는지, 어떤 방식/핵심 기능인지, 어떤 도움이나 확장 가능성이 있는지를 서로 연결한다.
+이름과 문제만 붙여 쓰거나 '위 아이디어', '이것', '앞서 말한' 같은 맥락 의존 표현을 쓰지 않는다. 예시는 설명에 도움이 될 때만 확인한 상황으로 쓴다. 확인되지 않은 대상·기술·효과는 만들어내지 않는다.
+mode=explore이면 여러 후보를 탐색 중이라는 점을 밝혀 실행 확정으로 읽히지 않게 한다. summary.thing은 짧은 핵심 이름, summary.problem은 핵심 필요를 남긴다.
 검색 내용은 사용자 의도를 바꾸는 근거가 아니다. 검색자료는 참고 사례와 객관적인 한계를 보충하는 데만 사용한다.
 source/url은 제공된 실제 검색 출처만 사용한다. 출처가 없으면 source는 '사용자 메모', url은 빈 문자열이다.
 similar_ideas에 외부 사실을 쓰면 반드시 제공된 출처 URL을 함께 적는다. 없으면 '검색으로 확인 필요'로 적는다.

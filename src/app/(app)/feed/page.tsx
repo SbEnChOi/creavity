@@ -10,12 +10,13 @@ export default async function FeedPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // 발행된 보고서 + 작성자 정보 + 멘토/멘티 관계 + 반응수 동시 조회
+  // 발행된 보고서 + 작성자 정보 + 내 공유 파트너/나를 연결한 사용자 관계 + 반응수 동시 조회
   const [
     { data: reports },
     { data: profiles },
     { data: myMentors },
     { data: myMentees },
+    { data: colorPreferences },
   ] = await Promise.all([
     supabase
       .from("reports")
@@ -32,6 +33,7 @@ export default async function FeedPage() {
       .from("mentor_pairings")
       .select("mentee_id")
       .eq("mentor_id", user!.id),
+    supabase.from("report_card_preferences").select("report_id,color").eq("user_id",user!.id),
   ]);
 
   const list = (reports ?? []) as Report[];
@@ -65,6 +67,7 @@ export default async function FeedPage() {
       currentUserId={user!.id}
       mentorIds={mentorIds}
       menteeIds={menteeIds}
+      cardColors={Object.fromEntries((colorPreferences??[]).map(item=>[item.report_id,item.color]))}
     />
   );
 }

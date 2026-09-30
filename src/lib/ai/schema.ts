@@ -36,12 +36,16 @@ export const draftSchema = z.object({
       idea_name: z.string(), application: z.string(), similar_ideas: z.string(),
       feasibility: z.enum(["easy", "medium", "hard", "unknown"]), feasibility_reason: z.string(),
     }),
-    summary: z.object({ thing: z.string(), problem: z.string() }),
+    summary: z.object({ thing: z.string(), problem: z.string(), overview: z.string().optional() }),
     execution: z.object({ audience: z.string(), scenario: z.string(), first_test: z.string(), success_metric: z.string() }).nullable(),
   }),
   suggestions: z.array(z.string()), open_questions: z.array(z.string()),
 });
 export type Draft = z.infer<typeof draftSchema>;
+// Newly generated summaries are self-contained; legacy saved drafts remain readable.
+export const draftGenerationSchema = draftSchema.extend({ content: draftSchema.shape.content.extend({
+  summary: draftSchema.shape.content.shape.summary.extend({ overview: z.string() }),
+}) });
 export type Answer = { topic: Topic; question: string; value: string };
 export type Citation = { title: string; url: string; start: number; end: number };
 export type Resource = { title: string; url: string; kind: "web" | "video" | "image"; thumbnail?: string; credit?: string };
@@ -60,11 +64,25 @@ export type SessionState = {
   refinementRequest?: string;
   pendingRefinement?: { topic: Topic; feedback: string } | null;
 };
-export type Session = { id: string; revision: number; state: SessionState; updated_at: string };
+export type Session = { id: string; revision: number; state: SessionState; updated_at: string; processing_until?: string | null; user_id?: string };
+
+const answerSchema = z.object({ topic: z.enum(TOPICS), question: z.string().max(2000), value: z.string().max(16000) });
+export const sessionStateSchema = z.object({
+  seed: z.string().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional(),
+  sourceSessionId: z.string().uuid().optional(), focusDirection: z.string().max(2000).optional(),
+  explorationContext: z.object({ possibilities: z.string(), suggestions: z.array(z.string()) }).optional(),
+  phase: z.enum(["questions", "confirm", "review"]), answers: z.array(answerSchema).max(6),
+  question: questionSchema.extend({ topic: z.enum(TOPICS) }).nullable(), clarification: z.string(),
+  research: z.object({ text: z.string(), citations: z.array(z.object({ title: z.string(), url: z.string(), start: z.number(), end: z.number() })), resources: z.array(z.object({ title: z.string(), url: z.string(), kind: z.enum(["web", "video", "image"]), thumbnail: z.string().optional(), credit: z.string().optional() })), warning: z.string().optional(), videoSearchUrl: z.string().optional() }).nullable(),
+  draft: draftSchema.nullable(), confirmed: z.boolean(), history: z.array(answerSchema).optional(), pendingAnswer: answerSchema.nullable().optional(),
+  refinementRequest: z.string().optional(), pendingRefinement: z.object({ topic: z.enum(TOPICS), feedback: z.string() }).nullable().optional(),
+});
+export const sessionSchema = z.object({ id: z.string().uuid(), revision: z.number().int().nonnegative(), state: sessionStateSchema, updated_at: z.string(), processing_until: z.string().nullable().optional(), user_id: z.string().uuid().optional() });
 
 export const requestSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("start"), seed: z.string().trim().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional() }),
-  z.object({ action: z.literal("fork_focus"), id: z.string().uuid(), revision: z.number().int().nonnegative(), direction: z.string().trim().min(3).max(2000) }),
+  z.object({ action: z.literal("start"), requestId: z.string().uuid().optional(), seed: z.string().trim().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional() }),
+  z.object({ action: z.literal("resume"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
+  z.object({ action: z.literal("fork_focus"), requestId: z.string().uuid().optional(), id: z.string().uuid(), revision: z.number().int().nonnegative(), direction: z.string().trim().min(3).max(2000) }),
   z.object({ action: z.literal("answer"), id: z.string().uuid(), revision: z.number().int().nonnegative(), choices: z.array(z.string().max(80)).max(6), custom: z.string().trim().max(2000).default("") }),
   z.object({ action: z.literal("clarify"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
   z.object({ action: z.literal("back"), id: z.string().uuid(), revision: z.number().int().nonnegative(), topic: z.enum(TOPICS) }),

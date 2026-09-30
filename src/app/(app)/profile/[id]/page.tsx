@@ -61,7 +61,7 @@ export default async function ProfilePage({
     reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1;
   });
 
-  // 멘토 관계 확인
+  // 내 공유 파트너 관계 확인
   const { data: pairing } = !isMe
     ? await supabase
         .from("mentor_pairings")
@@ -97,8 +97,6 @@ export default async function ProfilePage({
         <div className="flex-1 min-w-0 pt-2">
           <h1 className="text-2xl font-bold text-foreground mb-1">{name}</h1>
           <div className="flex items-center gap-2 text-sm text-foreground/60 mb-4">
-            {profile.grade != null && <span>{profile.grade}학년</span>}
-            <span>·</span>
             <span>발행 {list.length}편</span>
           </div>
 

@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createSupabaseBrowserClient();
+  function destination(){const next=new URLSearchParams(window.location.search).get("next");return next&&/^\/ai-share\/[0-9a-f-]{36}$/i.test(next)?next:"/dashboard";}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +43,7 @@ export default function LoginPage() {
       }
       // 이메일 확인이 꺼져있으면 세션이 바로 발급됨
       if (data.session) {
-        router.push("/dashboard");
+        router.push(destination());
         router.refresh();
       } else {
         setError("이메일로 보낸 확인 링크를 클릭한 뒤 로그인해주세요.");
@@ -61,7 +62,7 @@ export default function LoginPage() {
       if (data.user) {
         await ensureProfile(supabase, data.user, email.split("@")[0]);
       }
-      router.push("/dashboard");
+      router.push(destination());
       router.refresh();
     }
   };
@@ -94,7 +95,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-1.5">Creavy · 크래비</h1>
           <p className="text-sm text-foreground/60">
-            동아리원과 함께 생각을 나누는 보고서 플랫폼
+            떠오른 생각을 정리하고 함께 나누는 아이디어 플랫폼
           </p>
         </div>
 
@@ -179,7 +180,7 @@ export default function LoginPage() {
         </button>
 
         <p className="mt-6 text-center text-xs text-foreground/40">
-          가입하면 동아리 멤버로 등록됩니다.
+          가입하면 내 아이디어를 보관하고 다른 사람과 공유할 수 있어요.
         </p>
       </div>
     </div>

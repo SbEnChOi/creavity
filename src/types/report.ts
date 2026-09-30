@@ -38,6 +38,7 @@ export type ReportContent = {
     feasibility_reason?: string;
   };
   summary?: {
+    overview?: string;                     // 처음 읽어도 이해할 수 있는 전체 요약
     thing?: string;
     problem?: string;
   };
