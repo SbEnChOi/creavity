@@ -40,3 +40,39 @@ test("real Postgres migration: private sessions, atomic quota and concurrent req
     assert.equal((await db.query<{ allowed: boolean }>("select public.claim_ai_request() as allowed")).rows[0].allowed, true);
   } finally { await db.close(); }
 });
+
+test("legacy report view preserves private-report RLS for each viewer", async () => {
+  const db = new PGlite();
+  const migration = await readFile(new URL("../supabase/migrations/202609300002_report_view_privacy.sql", import.meta.url), "utf8");
+  const alice = "00000000-0000-4000-8000-000000000001";
+  const bob = "00000000-0000-4000-8000-000000000002";
+  try {
+    // Fresh installs without the legacy view also accept the migration.
+    await db.exec(migration);
+    await db.exec(`create role authenticated;
+      create schema auth; grant usage on schema auth to authenticated;
+      create function auth.uid() returns uuid language sql stable as $$
+        select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+      $$;
+      create table public.reports (author_id uuid, visibility text, title text);
+      insert into public.reports values ('${alice}','private','private draft'), ('${alice}','public','public report');
+      alter table public.reports enable row level security;
+      create policy visible_reports on public.reports for select to authenticated
+        using (author_id = auth.uid() or visibility = 'public');
+      create view public.v_reports_with_meta as select * from public.reports;
+      grant select, update on public.reports to authenticated;
+      grant select on public.v_reports_with_meta to authenticated;
+      set role authenticated; set "request.jwt.claim.sub" = '${bob}';`);
+    // Reproduce the former definer view bypass, then apply the actual migration.
+    assert.equal((await db.query("select * from public.v_reports_with_meta")).rows.length, 2);
+    await db.exec("reset role");
+    await db.exec(migration);
+    await db.exec(`set role authenticated; set "request.jwt.claim.sub" = '${bob}';`);
+    assert.equal((await db.query("select * from public.v_reports_with_meta")).rows.length, 1);
+    assert.equal((await db.query("update public.reports set title='tampered' returning title")).rows.length, 0);
+    await db.exec(`set "request.jwt.claim.sub" = '${alice}';`);
+    assert.equal((await db.query("select * from public.v_reports_with_meta")).rows.length, 2);
+    assert.equal((await db.query<{ title: string }>("update public.reports set title='saved' where visibility='private' returning title")).rows[0].title, 'saved');
+    await assert.rejects(db.query("update public.reports set author_id=$1", [bob]), /row-level security/);
+  } finally { await db.close(); }
+});

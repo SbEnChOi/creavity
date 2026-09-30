@@ -36,7 +36,7 @@ export type Draft = z.infer<typeof draftSchema>;
 export type Answer = { topic: Topic; question: string; value: string };
 export type Citation = { title: string; url: string; start: number; end: number };
 export type Resource = { title: string; url: string; kind: "web" | "video" | "image"; thumbnail?: string; credit?: string };
-export type Research = { text: string; citations: Citation[]; resources: Resource[]; warning?: string };
+export type Research = { text: string; citations: Citation[]; resources: Resource[]; warning?: string; videoSearchUrl?: string };
 export type SessionState = {
   seed: string; format: "basic" | "extended"; useResearch: boolean;
   phase: "questions" | "confirm" | "review";

@@ -47,6 +47,7 @@ export default function ResearchPanel({ research }: { research: Research | null 
       })}
     </div>
     {!resources.length && <p className="text-xs text-foreground/50">이 종류의 자료는 아직 찾지 못했습니다.</p>}
+    {tab === "video" && research.videoSearchUrl && safeUrl(research.videoSearchUrl) && <a href={research.videoSearchUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-xs text-accent hover:underline"><Film size={14} />YouTube에서 관련 영상 직접 검색</a>}
     <p className="text-[11px] leading-5 text-foreground/50">검색 자료는 참고용입니다. 이미지의 제작자·이용 조건은 원본에서 확인할 수 있습니다.</p>
   </section>;
 }

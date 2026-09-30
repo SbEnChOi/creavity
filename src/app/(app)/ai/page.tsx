@@ -10,6 +10,7 @@ export default async function AiPage({ searchParams: query }: { searchParams: Pr
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
+  if (user.is_anonymous) return <IdeaStudio configured={false} setupError="AI 구체화는 회원 계정으로 이용할 수 있습니다. 로그아웃한 뒤 로그인 화면에서 회원가입 또는 회원 로그인을 해주세요." />;
   const { data, error } = await supabase.from("ai_sessions").select("id, revision, state, updated_at").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(10);
   let initialSession: Session | null = null;
   let setupError = error ? "AI 대화 저장소 연결이 필요합니다. 운영자가 Supabase AI 마이그레이션을 적용해주세요." : "";

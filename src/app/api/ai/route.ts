@@ -23,6 +23,7 @@ export async function POST(req: Request) {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return fail("로그인 후 다시 시도해주세요.", 401);
+  if (user.is_anonymous) return fail("AI 구체화는 회원 계정으로 이용할 수 있습니다. 로그아웃한 뒤 회원가입 또는 회원 로그인을 해주세요.", 403);
   if (!process.env.OPENAI_API_KEY) return fail("AI 연결 준비 중입니다. 운영자가 서버에 OPENAI_API_KEY를 설정해야 합니다.", 503);
   let current: SessionState | null = null;
   let locked = false;

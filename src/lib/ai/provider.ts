@@ -5,7 +5,7 @@ export { AiError } from "./errors";
 
 export type ResponseOutput = {
   status?: string;
-  output?: Array<{ type: string; content?: Array<{ type: string; text?: string; annotations?: Array<{ type: string; url?: string; title?: string; start_index?: number; end_index?: number }> }> }>;
+  output?: Array<{ type: string; action?: { sources?: Array<{ url?: string; title?: string }> }; content?: Array<{ type: string; text?: string; annotations?: Array<{ type: string; url?: string; title?: string; start_index?: number; end_index?: number }> }> }>;
 };
 
 // Always called on the server. No browser-supplied keys or provider URLs.

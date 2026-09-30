@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "tsx --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ai:check": "node --env-file=.env.local --import tsx scripts/check-ai.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",

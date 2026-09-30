@@ -24,7 +24,7 @@ RLS 정책 적용됨 — 프론트에서 권한 체크 불필요.
 - 그림자 거의 없음, 호버 시 배경색만 살짝
 
 ## 화면 목록
-1. 로그인 (Google OAuth)
+1. 로그인 (이메일/비밀번호·게스트)
 2. 내 보고서 대시보드 (카드 그리드 + 검색 + 필터)
 3. 새 보고서 작성 (3단계 양식 + 자동저장)
 4. 동아리 피드
@@ -35,6 +35,8 @@ RLS 정책 적용됨 — 프론트에서 권한 체크 불필요.
 ## AI 구현
 - 서버 전용 OpenAI Responses API. 설정은 `.env.example` 참고.
 - `supabase/migrations/202609300001_ai_studio.sql`로 ai_sessions/ai_usage와 RLS·quota·lock 함수 적용.
+- `202609300002_report_view_privacy.sql`로 기존 조회 뷰의 RLS와 작성자의 문서 수정 권한 적용.
+- `npm run ai:check`로 운영 연결 점검. AI 요청은 회원 계정만 허용하며 키는 서버에만 설정.
 - 대화는 본인만 접근. 사용자 확인 전 초안 생성 금지. 기존 양식이 기본이며 execution/ai_notes는 선택 확장.
 - 개발용 `/ai-preview`는 예시 응답만 사용하고 운영 환경에서 열리지 않음.
 - 테스트/검증: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.

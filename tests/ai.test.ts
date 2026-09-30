@@ -4,7 +4,7 @@ import { createDemoTransport, DEMO_SEED } from "../src/lib/ai/demo";
 import { draftToReport } from "../src/lib/ai/report";
 import { transition } from "../src/lib/ai/engine";
 import { TOPICS, nextTopic, readAnswer, safeUrl, videoId, requestSchema, type Question } from "../src/lib/ai/schema";
-import { commonsImages, extractCitations } from "../src/lib/ai/research";
+import { commonsImages, extractCitations, extractVideoResources, searchCommonsImages } from "../src/lib/ai/research";
 import { AiError, response } from "../src/lib/ai/provider";
 
 const start = { action: "start" as const, seed: DEMO_SEED, format: "extended" as const, useResearch: true };
@@ -193,4 +193,32 @@ test("Commons thumbnail host and attribution are accepted; external thumbnail in
   assert.equal(resources.length, 1);
   assert.equal(resources[0].kind, "image");
   assert.equal(resources[0].credit, "Artist · CC BY-SA 4.0");
+});
+
+test("empty compound image searches retry the visual object once", async () => {
+  const queries: string[] = [];
+  const stub = (async (url: string | URL | Request) => {
+    queries.push(new URL(String(url)).searchParams.get("gsrsearch")!);
+    return Response.json({ query: { pages: queries.length === 1 ? {} : {
+      "1": { title: "File:Umbrella.jpg", imageinfo: [{ thumburl: "https://upload.wikimedia.org/umbrella.jpg", descriptionurl: "https://commons.wikimedia.org/wiki/File:Umbrella.jpg" }] },
+    } } });
+  }) as typeof fetch;
+  assert.equal((await searchCommonsImages("umbrella rain", stub)).length, 1);
+  assert.deepEqual(queries, ["intitle:umbrella rain filetype:bitmap", "intitle:umbrella filetype:bitmap"]);
+});
+
+test("video resources use actual search sources, never URLs invented in model text", () => {
+  const data = { output: [
+    { type: "message", content: [{ type: "output_text", text: "https://youtu.be/fakefake123" }] },
+    { type: "web_search_call", action: { sources: [
+      { title: "Real source", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+      { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+      { url: "https://youtube.com.evil.org/watch?v=dQw4w9WgXcQ" },
+      { url: "https://youtu.be/invalid" },
+    ] } },
+  ] };
+  const resources = extractVideoResources(data);
+  assert.equal(resources.length, 1);
+  assert.equal(resources[0].title, "Real source");
+  assert.equal(resources[0].kind, "video");
 });
