@@ -128,7 +128,7 @@ export default function ReportDetail({
   };
 
   return (
-    <div className="px-10 py-10 max-w-3xl print:px-0 print:py-0 print:max-w-none">
+    <div className="px-5 md:px-10 py-10 max-w-3xl [overflow-wrap:anywhere] print:px-0 print:py-0 print:max-w-none">
       {/* 뒤로가기 */}
       <div className="flex items-center justify-between mb-8 print:hidden">
         <button
