@@ -7,11 +7,12 @@ export default function DraftPreview({ draft }: { draft: Draft }) {
     { title: "발견", rows: [["부분", c.step1.kind === "idea" ? "아이디어" : "기술"], ["이름", c.step1.name], ["분야", c.step1.fields.join(" · ")], ["설명", c.step1.description]] },
     { title: "분석", rows: [["내 말로 설명", c.step2.principle], ["강점", c.step2.strengths], ["한계", c.step2.limits]] },
     { title: "확장", rows: [["아이디어 이름", c.step3.idea_name], ["활용 방법", c.step3.application], ["유사한 아이디어", c.step3.similar_ideas], ["실현 가능성", ({ easy: "쉬움", medium: "보통", hard: "어려움", unknown: "판단 보류" })[c.step3.feasibility]], ["이유", c.step3.feasibility_reason]] },
-    { title: "한 줄 정리", rows: [["무엇을", c.summary.thing], ["해결하려는 문제", c.summary.problem]] },
+    ...(!c.summary.overview ? [{ title: "아이디어 요약", rows: [["핵심 아이디어", c.summary.thing], ["해결하려는 문제", c.summary.problem]] }] : []),
     ...(c.execution ? [{ title: "첫 실행 계획", rows: [["대상 사용자", c.execution.audience], ["사용 상황", c.execution.scenario], ["첫 실험", c.execution.first_test], ["성공 기준", c.execution.success_metric]] }] : []),
   ];
   return <div className="space-y-7">
     <h2 className="text-2xl font-semibold tracking-tight">{draft.title}</h2>
+    {c.summary.overview && <section className="rounded-xl border border-accent/15 bg-accent/5 p-5"><h3 className="mb-3 text-sm font-semibold text-accent">아이디어 요약</h3><div className="text-base leading-8"><FormattedText value={c.summary.overview}/></div></section>}
     {groups.map((g, i) => <section key={g.title}>
       <h3 className="mb-4 flex items-center gap-3 text-lg font-semibold"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/10 text-sm text-accent">{i + 1}</span>{g.title}</h3>
       <dl className="space-y-5 border-l border-border-default pl-4">

@@ -9,7 +9,7 @@ export default function AboutPage() {
         </div>
         <h1 className="text-3xl font-bold text-foreground mb-1">Creavy · 크래비</h1>
         <p className="text-sm text-foreground/60">
-          동아리원과 함께 생각을 나누는 보고서 플랫폼
+          떠오른 생각을 정리하고 함께 나누는 아이디어 플랫폼
         </p>
       </header>
 
@@ -29,16 +29,16 @@ export default function AboutPage() {
         </h2>
         <div className="px-5 py-4 rounded-lg bg-surface text-sm text-foreground/85 leading-relaxed">
           <p className="mb-3">
-            창의적인 아이디어를 내놓으려면 창의적인 사고력이 필요하다.
-            이를 위해선 뒷받침하는 배경지식이 필수적이다.
+            일상에서 문득 떠오른 생각은 짧은 메모로 시작해도 좋아요.
+            Creavy는 그 생각을 나중에 다시 꺼내 쓸 수 있는 아이디어로 정리해요.
           </p>
           <p className="mb-3">
-            같은 공간, 같은 일상의 반복인 디미고 환경에서는
-            평소에 주변을 둘러보며 이러한 지식을 쌓는 것이 어렵다.
+            AI와 대화하며 다양한 활용 장면과 파생 기능을 탐색하고,
+            마음에 드는 방향은 실제로 써볼 방법까지 구체화할 수 있어요.
           </p>
           <p>
-            매주 새롭게 알게된 아이디어나 기술을 분석하며
-            창의적인 사고력을 길러보자.
+            정리한 아이디어와 참고 자료를 보관하고 함께 나눠보세요.
+            지금 실행하지 않아도 가능성을 기록해두는 것만으로 의미가 있어요.
           </p>
         </div>
       </section>

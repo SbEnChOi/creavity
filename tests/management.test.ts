@@ -1,0 +1,77 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { PGlite } from "@electric-sql/pglite";
+
+test("AI management: private transcript, controlled publication, audited transfer and administrator roles", async()=>{
+  const db=new PGlite();
+  const alice="10000000-0000-4000-8000-000000000001";
+  const bob="10000000-0000-4000-8000-000000000002";
+  const admin="10000000-0000-4000-8000-000000000003";
+  const report="10000000-0000-4000-8000-000000000004";
+  const state={seed:"private idea memo",phase:"questions",answers:[]};
+  try{
+    await db.exec(`create role anon; create role authenticated;create schema auth;grant usage on schema auth to anon,authenticated;
+      create table auth.users(id uuid primary key);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid;$$;
+      insert into auth.users values('${alice}'),('${bob}'),('${admin}');
+      create table public.profiles(id uuid primary key references auth.users,display_name text,is_admin boolean default false);
+      insert into public.profiles values('${alice}','Alice',false),('${bob}','Bob',false),('${admin}','Admin',true);
+      alter table public.profiles enable row level security;create policy profiles_access on public.profiles for all to authenticated using(true) with check(true);grant select,insert,update on public.profiles to authenticated;
+      create table public.reports(id uuid primary key, author_id uuid, visibility text);insert into public.reports values('${report}','${alice}','private');alter table public.reports enable row level security;
+      create policy report_access on public.reports for select to authenticated using(author_id=auth.uid() or visibility='public');grant select on public.reports to authenticated;`);
+    await db.exec(await readFile(new URL("../supabase/migrations/202609300001_ai_studio.sql",import.meta.url),"utf8"));
+    const migration=await readFile(new URL("../supabase/migrations/202609300004_ai_management_sharing.sql",import.meta.url),"utf8");
+    await db.exec(migration);await db.exec(migration);
+    await db.exec(`set role authenticated;set "request.jwt.claim.sub"='${alice}';`);
+    const id=(await db.query<{id:string}>("insert into public.ai_sessions(user_id,state) values($1,$2) returning id",[alice,state])).rows[0].id;
+    const entries=[{role:"user",text:"original private memo"},{role:"assistant",text:"question",payload:{options:["A","B"]}}];
+    const saved=await db.query<{data:{revision:number}}>("select public.save_ai_session($1,0,$2,$3) as data",[id,state,entries]);
+    assert.equal(saved.rows[0].data.revision,1);
+    assert.equal((await db.query("select * from public.ai_session_messages")).rows.length,2);
+    await assert.rejects(db.query("select public.save_ai_session($1,0,$2,$3)",[id,state,entries]),/Conversation changed/);
+    // An invalid transcript entry rolls back the state revision too.
+    await assert.rejects(db.query("select public.save_ai_session($1,1,$2,$3)",[id,state,[{role:"invalid",text:"bad"}]]),/check constraint/);
+    assert.equal((await db.query<{revision:number}>("select revision from public.ai_sessions where id=$1",[id])).rows[0].revision,1);
+    const share=(await db.query<{id:string}>("insert into public.ai_shares(session_id,user_id,mode,document) values($1,$2,'explore',$3) returning id",[id,alice,{title:"reviewed result"}])).rows[0].id;
+    await db.exec(`set "request.jwt.claim.sub"='${bob}';`);
+    assert.equal((await db.query("select * from public.ai_sessions")).rows.length,0);
+    assert.equal((await db.query("select * from public.ai_session_messages")).rows.length,0);
+    assert.equal((await db.query("select * from public.ai_shares")).rows.length,0);
+    await assert.rejects(db.query("select public.admin_edit_ai_session($1,1,$2)",[id,state]),/Administrator access required/);
+    await assert.rejects(db.query("select public.admin_move_ai_session($1,1,$2)",[id,bob]),/Administrator access required/);
+    await assert.rejects(db.query("update public.profiles set is_admin=true where id=$1",[bob]),/Administrator access required/);
+    await assert.rejects(db.query("select public.admin_set_member_role($1,true)",[bob]),/Administrator access required/);
+    await assert.rejects(db.query("insert into public.ai_shares(session_id,user_id,mode,document) values($1,$2,'explore','{}')",[id,bob]),/Only the conversation owner/);
+    await assert.rejects(db.query("insert into public.report_card_preferences values($1,$2,'blue')",[bob,report]),/row-level security/);
+    await db.exec(`set "request.jwt.claim.sub"='${alice}';`);
+    await db.query("insert into public.report_card_preferences values($1,$2,'blue')",[alice,report]);
+    await db.query("update public.ai_shares set visibility='custom',recipient_ids=array[$1::uuid] where id=$2",[bob,share]);
+    await db.exec(`set "request.jwt.claim.sub"='${bob}';`);
+    assert.equal((await db.query("select * from public.ai_shares")).rows.length,1);
+    assert.equal((await db.query("select * from public.ai_session_messages")).rows.length,0);
+    assert.equal((await db.query("select * from public.report_card_preferences")).rows.length,0);
+    await db.exec(`set "request.jwt.claim.sub"='${alice}';`);
+    await db.query("update public.ai_shares set visibility='public' where id=$1",[share]);
+    await db.exec("reset role;set role anon;set \"request.jwt.claim.sub\"='';");
+    assert.equal((await db.query("select * from public.ai_shares")).rows.length,1);
+    await assert.rejects(db.query("select * from public.ai_session_messages"),/permission denied/);
+    await db.exec(`reset role;set role authenticated;set "request.jwt.claim.sub"='${admin}';`);
+    assert.equal((await db.query("select * from public.ai_sessions")).rows.length,1);
+    assert.equal((await db.query("select * from public.ai_session_messages")).rows.length,2);
+    await db.query("select public.admin_edit_ai_session($1,1,$2)",[id,{...state,seed:"edited private idea"}]);
+    await assert.rejects(db.query("select public.admin_move_ai_session($1,1,$2)",[id,bob]),/Conversation changed/);
+    await db.query("select public.admin_move_ai_session($1,2,$2)",[id,bob]);
+    assert.equal((await db.query("select * from public.admin_ai_events")).rows.length,2);
+    await db.query("select public.admin_set_member_role($1,true)",[alice]);
+    await assert.rejects(db.query("select public.admin_set_member_role($1,false)",[admin]),/own administrator role/);
+    await db.exec(`set "request.jwt.claim.sub"='${alice}';`);
+    // A newly appointed administrator can read all conversations, but ownership is still Bob's.
+    assert.equal((await db.query<{user_id:string}>("select user_id from public.ai_sessions")).rows[0].user_id,bob);
+    await db.exec(`set "request.jwt.claim.sub"='${bob}';`);
+    assert.equal((await db.query("select * from public.ai_session_messages")).rows.length,2);
+    assert.equal((await db.query<{visibility:string}>("select visibility from public.ai_shares")).rows[0].visibility,"private");
+    assert.equal((await db.query("select * from public.admin_ai_events")).rows.length,0);
+    await db.exec("reset role;set role anon;set \"request.jwt.claim.sub\"='';");
+    assert.equal((await db.query("select * from public.ai_shares")).rows.length,0);
+  }finally{await db.close();}
+});

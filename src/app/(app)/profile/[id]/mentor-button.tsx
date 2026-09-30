@@ -56,7 +56,7 @@ export default function MentorButton({
       ) : (
         <UserPlus size={14} strokeWidth={1.75} />
       )}
-      {isMentor ? "멘토 해제" : "멘토 신청"}
+      {isMentor ? "공유 파트너 해제" : "공유 파트너 추가"}
     </button>
   );
 }

@@ -122,10 +122,7 @@ export default function AdminClient({
     if (!confirm(currentValue ? "관리자 권한을 해제할까요?" : "관리자로 지정할까요?"))
       return;
     setPendingId(memberId);
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_admin: !currentValue })
-      .eq("id", memberId);
+    const { error } = await supabase.rpc("admin_set_member_role", { member_id: memberId, admin_value: !currentValue });
     setPendingId(null);
     if (error) {
       alert("실패: " + error.message);
@@ -140,6 +137,7 @@ export default function AdminClient({
   return (
     <div className="px-10 py-12 max-w-5xl">
       <header className="mb-8">
+        <Link href="/admin/ai" className="ai-secondary mb-5">AI 대화 전체 관리</Link>
         <h1 className="text-3xl font-bold text-foreground mb-1 flex items-center gap-2">
           <Shield size={24} strokeWidth={1.75} className="text-accent" />
           관리자
@@ -361,9 +359,6 @@ function MemberTable({
                       </span>
                     )}
                   </div>
-                  {m.grade != null && (
-                    <div className="text-xs text-foreground/50">{m.grade}학년</div>
-                  )}
                 </div>
               </Link>
               <div className="flex items-center gap-1.5">

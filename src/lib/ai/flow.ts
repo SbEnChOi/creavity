@@ -9,23 +9,38 @@ export type FlowDependencies = {
   assessFeedback?: (state: SessionState, feedback: string) => Promise<Topic | null>;
 };
 
+export function initialState(request: Extract<AiRequest, { action: "start" }>): SessionState {
+  const mode = request.mode ?? "explore";
+  return { seed: request.seed, mode, format: mode === "explore" ? "basic" : request.format, useResearch: request.useResearch,
+    phase: "questions", answers: [], question: null, clarification: "", research: null, draft: null, confirmed: false };
+}
+
+export function focusedState(state: SessionState, id: string, direction: string): SessionState {
+  if (dialogueMode(state) !== "explore" || state.phase !== "review" || !state.confirmed || !state.draft || state.pendingRefinement) throw new AiError("먼저 확장 탐색 기록을 확인해주세요.", 400);
+  return { seed: state.seed, mode: "focus", format: "extended", useResearch: state.useResearch,
+    sourceSessionId: id, focusDirection: direction,
+    explorationContext: { possibilities: state.draft.content.step3.application, suggestions: state.draft.suggestions },
+    phase: "questions", answers: [], question: null, clarification: "", research: null, draft: null, confirmed: false };
+}
+
 export async function transition(current: SessionState | null, request: AiRequest, deps: FlowDependencies): Promise<SessionState> {
   if (request.action === "start") {
-    const mode = request.mode ?? "explore";
-    const state: SessionState = { seed: request.seed, mode, format: mode === "explore" ? "basic" : request.format, useResearch: request.useResearch,
-      phase: "questions", answers: [], question: null, clarification: "", research: null, draft: null, confirmed: false };
+    const state = initialState(request);
     state.question = await deps.askQuestion(state, "goal");
     return state;
   }
   if (!current) throw new AiError("대화를 찾을 수 없습니다.", 404);
   const state = structuredClone(current);
   switch (request.action) {
+    case "resume": {
+      if (state.phase !== "questions" || state.question) return state;
+      const topic = nextTopic(state.answers);
+      state.question = topic ? await deps.askQuestion(state, topic) : null;
+      if (!topic) state.phase = "confirm";
+      break;
+    }
     case "fork_focus": {
-      if (dialogueMode(state) !== "explore" || state.phase !== "review" || !state.confirmed || !state.draft || state.pendingRefinement) throw new AiError("먼저 확장 탐색 기록을 확인해주세요.", 400);
-      const focused: SessionState = { seed: state.seed, mode: "focus", format: "extended", useResearch: state.useResearch,
-        sourceSessionId: request.id, focusDirection: request.direction,
-        explorationContext: { possibilities: state.draft.content.step3.application, suggestions: state.draft.suggestions },
-        phase: "questions", answers: [], question: null, clarification: "", research: null, draft: null, confirmed: false };
+      const focused = focusedState(state, request.id, request.direction);
       focused.question = await deps.askQuestion(focused, "goal");
       return focused;
     }

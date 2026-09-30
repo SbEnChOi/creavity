@@ -10,7 +10,7 @@ const menuItems = [
   { href: "/dashboard", label: "내 보고서", icon: FileText },
   { href: "/new", label: "새로 작성", icon: PenSquare },
   { href: "/ai", label: "AI 구체화", icon: Sparkles },
-  { href: "/feed", label: "동아리 피드", icon: Users },
+  { href: "/feed", label: "공유 피드", icon: Users },
   { href: "/ideas", label: "아이디어 공유", icon: Lightbulb },
   { href: "/settings", label: "환경설정", icon: Settings },
   { href: "/about", label: "정보", icon: Info },
@@ -127,7 +127,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
               {name}
             </span>
             <span className="block text-xs text-foreground/50 truncate">
-              {clubName ?? "동아리 미지정"}
+              {clubName ?? "개인 공간"}
             </span>
           </span>
         </button>

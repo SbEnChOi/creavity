@@ -14,7 +14,7 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 
 const visibilityOptions: { value: Visibility; label: string; Icon: typeof Globe }[] = [
   { value: "private", label: "비공개", Icon: Lock },
-  { value: "custom", label: "멘토·멘티만", Icon: UserCheck },
+  { value: "custom", label: "연결된 사용자만", Icon: UserCheck },
   { value: "public", label: "전체 공개", Icon: Globe },
 ];
 
@@ -127,7 +127,7 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
     // 자동저장이 다시 draft로 덮어쓰지 않도록 현재 status 갱신
     statusRef.current = "published";
 
-    // 멘토·멘티만(custom)인 경우 report_shares 동기화 — 양방향
+    // 연결된 사용자만(custom)인 경우 report_shares 동기화 — 양방향
     if (visibility === "custom") {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -282,8 +282,11 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
         </Field>
       </Section>
 
-      <Section number={4} label="한 줄 정리">
-        <Field label="무엇을">
+      <Section number={4} label="아이디어 요약">
+        <Field label="전체 요약">
+          <Textarea value={content.summary?.overview ?? ""} onChange={v=>setContent(p=>({...p,summary:{...(p.summary??{}),overview:v}}))} placeholder="어떤 아이디어인지, 언제 쓰는지, 핵심 기능과 기대 효과를 2~4문장으로 연결해주세요. 대화를 읽지 않은 사람도 이해할 수 있게 적어주세요." />
+        </Field>
+        <Field label="핵심 아이디어 이름">
           <Input
             value={content.summary?.thing ?? ""}
             onChange={(v) => setContent((p) => ({ ...p, summary: { ...(p.summary ?? {}), thing: v } }))}

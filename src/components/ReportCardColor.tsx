@@ -1,0 +1,6 @@
+"use client";
+import { Check, Palette } from "lucide-react";
+import { CARD_COLORS, type CardColor } from "@/lib/card-colors";
+export default function ReportCardColor({ color, onChange, busy, title }: {color:CardColor;onChange:(value:CardColor)=>void;busy:boolean;title:string}) {
+  return <details className="border-t border-black/10 px-4 py-3"><summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-foreground/70"><Palette size={14}/><span>카드 색</span><span className="ml-auto flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{backgroundColor:CARD_COLORS[color].dot}}/>{CARD_COLORS[color].label}</span></summary><div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={`${title} 카드 색 선택`}>{(Object.keys(CARD_COLORS) as CardColor[]).map(value=><button type="button" key={value} aria-label={`${CARD_COLORS[value].label}으로 변경`} aria-pressed={value===color} disabled={busy} onClick={()=>onChange(value)} className="flex h-8 w-8 items-center justify-center rounded-full border-2 disabled:opacity-40" style={{backgroundColor:CARD_COLORS[value].background,borderColor:value===color?CARD_COLORS[value].dot:CARD_COLORS[value].border}}>{value===color&&<Check size={14}/>}</button>)}</div><p className="mt-2 text-xs leading-5 text-foreground/65">내 화면에만 적용돼요.</p></details>;
+}

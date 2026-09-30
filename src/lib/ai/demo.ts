@@ -68,34 +68,39 @@ function exampleDraft(state: SessionState): Draft {
     step1: { kind: "idea", name: "우산 공유에서 시작한 아이디어", fields: ["소셜/커뮤니티"], difficulty: "casual", source: "사용자 메모", url: "", description: state.seed },
     step2: { principle: `아이디어의 씨앗: ${value("goal")}`, strengths: "[AI 제안 · 데모] 물건 나눔에서 교류·기록·재사용으로 확장할 가능성이 있다.", limits: "[검증 필요 · 데모] 각 가능성의 실제 효과와 운영 방법은 나중에 확인할 수 있다." },
     step3: { idea_name: "공유에서 교류와 기록으로", application: `관심 있는 활용 장면: ${value("audience")}\n파생 기능: ${value("solution")}\n연결과 변형: ${value("constraints")}`, similar_ideas: "실제 검색 연결 후 확인 필요", feasibility: "unknown", feasibility_reason: "실행 범위를 정하기 전이므로 판단 보류다." },
-    summary: { thing: "우산 공유에서 출발한 여러 가능성", problem: value("problem") }, execution: null,
+    summary: { thing: "우산 공유에서 출발한 여러 가능성", problem: value("problem"), overview:"우산을 서로 빌리고 돌려주는 일상의 경험에서 시작한 아이디어다. 필요한 물건을 나누는 활동을 기록·교류·재사용으로 넓혀, 여러 활용 장면과 파생 기능을 함께 보관한다. 지금은 실행 범위를 하나로 정하는 대신 관심 있는 가능성을 남기고, 나중에 선택한 방향을 구체화하는 단계다." }, execution: null,
   }, suggestions: ["[AI 제안 · 데모] 물건에 얽힌 사연을 작은 기록이나 전시로 연결하기", "[AI 제안 · 데모] 수리와 나눔을 함께 하는 활동으로 연결하기"], open_questions: [value("success"), "어떤 가능성을 다음에 발전시킬지 미정이다."] };
   return { title: "비 오는 날, 학교 우산 공유", content: {
     step1: { kind: "idea", name: "학교 우산 공유", fields: ["소셜/커뮤니티"], difficulty: "casual", source: "사용자 메모", url: "", description: state.seed },
     step2: { principle: `필요한 학생이 우산을 빌리고 다시 돌려주는 방식.\n해결할 문제: ${value("problem")}`, strengths: "[AI 제안 · 데모] 학교 안에서 작게 시작해 불편을 확인할 수 있다.", limits: "[검증 필요 · 데모] 우산 확보, 학교 허락과 반납 관리를 확인해야 한다." },
     step3: { idea_name: "학교 우산 공유", application: value("solution"), similar_ideas: "실제 검색 연결 후 확인 필요", feasibility: "unknown", feasibility_reason: `운영 조건과 학교 허락 확인 전 판단 보류.\n확인한 제약: ${value("constraints")}` },
-    summary: { thing: "학교 우산 공유", problem: value("problem") },
+    summary: { thing: "학교 우산 공유", problem: value("problem"), overview:"비 오는 날 우산이 필요한 사람이 우산함에서 빌리고 다시 돌려주는 아이디어다. 대여·반납 기록과 찾기 쉬운 안내를 활용해 물건을 구하기 어려운 상황과 반납 부담을 줄이려 한다. 운영 조건을 확인하고 작은 장소에서 실제 사용 흐름을 시험해볼 수 있다." },
     execution: state.format === "extended" ? { audience: value("audience"), scenario: "비 오는 날 학교에서 우산이 필요할 때", first_test: "[AI 제안 · 데모] 학교 허락을 받은 후 한 장소에서 작은 우산함을 시험해보기", success_metric: value("success") } : null,
   }, suggestions: ["[데모 제안] 먼저 친구들에게 우산을 빌리는 상황을 물어보기"], open_questions: ["학교의 운영 허락과 우산 확보 방법", "수량, 예산, 담당 인원은 아직 미정"] };
 }
 
 // Only the development preview imports this example transport. Production calls /api/ai.
-export function createDemoTransport() {
-  const sessions = new Map<string, Session>();
-  let count = 0;
+export function createDemoTransport(initial: Session[] = [], onSave?: (sessions: Session[], lastId: string) => void) {
+  const sessions = new Map<string, Session>(initial.map(session => [session.id,session]));
+  const friendlyPrompts = {
+    explore: { goal:"우산을 나누는 생각에서 가장 매력적인 부분은 무엇인가요?", audience:"이 생각을 어떤 다른 장면에서도 써볼 수 있을까요?", problem:"처음 떠올린 불편 말고, 어떤 문제를 더 풀어볼 수 있을까요?", solution:"원래 생각에 어떤 기능을 더해보고 싶나요?", constraints:"어떤 다른 방식이나 활동과 연결해보면 재미있을까요?", success:"나중에 다시 발전시킬 때 어떤 단서를 남겨둘까요?" },
+    focus: { goal:"우산을 나누면 어떤 점부터 달라졌으면 좋겠나요?", audience:"누가, 어떤 상황에서 우산을 빌리면 좋을까요?", problem:"빌리고 돌려주는 과정에서 어떤 불편을 먼저 해결할까요?", solution:"첫 시도는 어떤 방식으로 해보고 싶나요?", constraints:"시작할 때 꼭 지키고 싶은 조건은 무엇인가요?", success:"어떤 변화가 생기면 도움이 됐다고 느낄까요?" },
+  };
   return async (request: AiRequest): Promise<Session> => {
     const session = request.action === "start" ? null : sessions.get(request.id) ?? null;
     const state = await transition(session?.state ?? null, request, {
       askQuestion: async (s, topic) => {
         const q = (dialogueMode(s) === "explore" ? exploreQuestions : questions)[topic];
-        return { ...q, topic, multiple: true, reason: s.clarification ? "기타에 직접 적거나 미정으로 남길 수 있다." : q.reason };
+        return { ...q, topic, multiple: true, prompt:friendlyPrompts[dialogueMode(s)][topic], reason: s.clarification ? "기타에 직접 적어도 좋아요. 아직 정하지 않은 부분은 미정으로 남겨둘게요." : dialogueMode(s)==="explore"?"여러 가능성을 함께 골라도 좋아요. 마음에 드는 방향을 나중에 다시 꺼내볼 수 있어요.":"실제로 써보고 싶은 방향을 확인하려 해요. 정하지 않은 부분은 그대로 남겨도 괜찮아요." };
       },
       makeDraft: async (s) => exampleDraft(s),
       researchIdea: async () => ({ text: "미리보기에서는 실제 검색을 실행하지 않습니다. AI 연결 후 관련 글·사진·영상과 출처가 여기에 표시됩니다.", citations: [], resources: [] }),
     });
     const isNew = request.action === "start" || request.action === "fork_focus";
-    const next: Session = { id: isNew ? `00000000-0000-4000-8000-${String(++count).padStart(12, "0")}` : session!.id, revision: isNew ? 0 : session!.revision + 1, state, updated_at: new Date().toISOString() };
+    const next: Session = { id: isNew ? (request.action === "start" || request.action === "fork_focus" ? request.requestId : undefined) ?? crypto.randomUUID() : session!.id, revision: isNew ? 0 : session!.revision + 1, state, updated_at: new Date().toISOString() };
+    sessions.delete(next.id);
     sessions.set(next.id, next);
+    onSave?.([...sessions.values()],next.id);
     return next;
   };
 }

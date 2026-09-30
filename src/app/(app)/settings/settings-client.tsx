@@ -40,7 +40,6 @@ export default function SettingsClient({
 
   const [displayName, setDisplayName] = useState(me.display_name ?? "");
   const [avatarColor, setAvatarColor] = useState(me.avatar_color ?? "gray");
-  const [grade, setGrade] = useState<number | "">(me.grade ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
 
@@ -55,7 +54,6 @@ export default function SettingsClient({
       .update({
         display_name: displayName.trim() || null,
         avatar_color: avatarColor,
-        grade: grade === "" ? null : Number(grade),
       })
       .eq("id", currentUserId);
     setSavingProfile(false);
@@ -105,7 +103,7 @@ export default function SettingsClient({
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-foreground mb-1">환경설정</h1>
         <p className="text-sm text-foreground/60">
-          내 프로필과 멘토를 관리합니다.
+          내 프로필과 내 공유 파트너를 관리합니다.
         </p>
       </header>
 
@@ -126,23 +124,6 @@ export default function SettingsClient({
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="이름을 입력하세요"
               className="w-full px-3 py-2 text-sm bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/30"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-foreground/60 mb-1.5">
-              학년
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={3}
-              value={grade}
-              onChange={(e) =>
-                setGrade(e.target.value === "" ? "" : Number(e.target.value))
-              }
-              placeholder="1~3"
-              className="w-24 px-3 py-2 text-sm bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/30"
             />
           </div>
 
@@ -196,12 +177,12 @@ export default function SettingsClient({
         </div>
       </section>
 
-      {/* 멤버 / 멘토 */}
+      {/* 멤버 / 내 공유 파트너 */}
       <section>
         <div className="flex items-baseline justify-between mb-4 pb-2 border-b border-border-default">
-          <h2 className="text-sm font-semibold text-foreground">동아리 멤버</h2>
+          <h2 className="text-sm font-semibold text-foreground">공유 공간의 사용자</h2>
           <span className="text-xs text-foreground/50">
-            멘토 {mentorIds.size}명
+            내 공유 파트너 {mentorIds.size}명
           </span>
         </div>
 
@@ -236,11 +217,6 @@ export default function SettingsClient({
                       <div className="text-sm font-medium text-foreground truncate hover:underline">
                         {name}
                       </div>
-                      {m.grade != null && (
-                        <div className="text-xs text-foreground/50">
-                          {m.grade}학년
-                        </div>
-                      )}
                     </div>
                   </Link>
                   <button
@@ -260,7 +236,7 @@ export default function SettingsClient({
                     ) : (
                       <UserPlus size={12} strokeWidth={1.75} />
                     )}
-                    {isMentor ? "멘토 해제" : "멘토 신청"}
+                    {isMentor ? "공유 파트너 해제" : "공유 파트너 추가"}
                   </button>
                 </li>
               );

@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Creavy · 크래비",
-  description: "동아리원들의 창의적 사고력을 함께 키우는 보고서 작성·공유 플랫폼",
+  description: "일상의 아이디어를 발견하고 정리하며 함께 나누는 플랫폼",
 };
 
 export default function RootLayout({
