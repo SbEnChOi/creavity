@@ -11,6 +11,7 @@ export default function ReportAiNotes({ notes }: { notes?: ReportContent["ai_not
   const links = sources.filter((s) => s.kind !== "image");
   return <section className="report-ai-notes mt-8 space-y-6 rounded-xl border border-border-default p-5 text-base leading-7 [overflow-wrap:anywhere] md:p-6">
     <h2 className="text-lg font-semibold">AI 구체화 참고</h2>
+    {notes.mode === "explore" && <p className="text-sm text-foreground/75">확장 탐색 기록 · 관심 있는 가능성을 보관한 문서다. 실행 범위는 아직 확정하지 않았다.</p>}
     {!!images.length && <div><h3 className="mb-3 text-sm font-semibold text-foreground/75">참고 이미지</h3><div className="grid gap-4 sm:grid-cols-2">{images.map((source) => {
       const thumbnail = referenceThumbnail(source);
       return <figure key={source.url} className="min-w-0">
@@ -19,7 +20,7 @@ export default function ReportAiNotes({ notes }: { notes?: ReportContent["ai_not
       </figure>;
     })}</div></div>}
     {!!links.length && <div><h3 className="mb-3 text-sm font-semibold text-foreground/75">검색 출처</h3><ul className="space-y-3">{links.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">{source.title}</a></li>)}</ul></div>}
-    {!!notes.suggestions?.length && <div className="rounded-lg bg-surface p-4"><h3 className="mb-3 text-sm font-semibold text-foreground/75">AI 제안</h3><ul className="list-disc space-y-3 pl-5">{notes.suggestions.map((s,i) => <li key={i}><FormattedText value={s} /></li>)}</ul></div>}
+    {!!notes.suggestions?.length && <div className="rounded-lg bg-surface p-4"><h3 className="mb-3 text-sm font-semibold text-foreground/75">{notes.mode === "explore" ? "나중에 발전시킬 힌트 · AI 제안" : "AI 제안"}</h3><ul className="list-disc space-y-3 pl-5">{notes.suggestions.map((s,i) => <li key={i}><FormattedText value={s} /></li>)}</ul></div>}
     {!!notes.open_questions?.length && <div><h3 className="mb-3 text-sm font-semibold text-foreground/75">확인할 내용</h3><ul className="list-disc space-y-3 pl-5">{notes.open_questions.map((s,i) => <li key={i}><FormattedText value={s} /></li>)}</ul></div>}
   </section>;
 }

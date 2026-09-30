@@ -7,7 +7,7 @@ import { TOPICS, REFINEMENT_PRESETS, nextTopic, readAnswer, safeUrl, videoId, re
 import { commonsImages, extractCitations, extractVideoResources, searchCommonsImages } from "../src/lib/ai/research";
 import { AiError, response } from "../src/lib/ai/provider";
 
-const start = { action: "start" as const, seed: DEMO_SEED, format: "extended" as const, useResearch: true };
+const start = { action: "start" as const, seed: DEMO_SEED, format: "extended" as const, useResearch: true, mode: "focus" as const };
 
 test("all directions and explicit confirmation are required before drafting; revisions preserve the seed", async () => {
   const send = createDemoTransport();

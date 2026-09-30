@@ -1,5 +1,5 @@
 import { transition } from "./flow";
-import { type Draft, type Question, type Session, type SessionState, type AiRequest, type Topic } from "./schema";
+import { dialogueMode, type Draft, type Question, type Session, type SessionState, type AiRequest, type Topic } from "./schema";
 
 export const DEMO_SEED = "비 오는 날 학교에서 우산을 빌릴 수 있으면 좋겠다.\n빌리고 돌려주는 과정을 간단하게 만들고 싶어. 앱보다는 학교 안에서 작게 시작해보고 싶다.";
 const questions: Record<Topic, Omit<Question, "topic">> = {
@@ -29,8 +29,47 @@ const questions: Record<Topic, Omit<Question, "topic">> = {
     { id: "option3", label: "아직 정하지 않음", detail: "시험하면서 판단 기준을 찾기" }] },
 };
 
+const exploreQuestions: Record<Topic, Omit<Question, "topic">> = {
+  goal: { prompt: "우산 공유라는 생각에서 어떤 가능성을 더 넓혀보고 싶은가?", reason: "한 가지 용도로 정하지 않고 관심 있는 씨앗을 모은다.", multiple: true, options: [
+    { id: "option1", label: "필요한 물건을 서로 나누는 경험", detail: "우산에서 다른 생활 물품으로 연결" },
+    { id: "option2", label: "비 오는 날을 재미있게 만드는 경험", detail: "불편 해결을 넘어 놀이와 기록으로 확장" },
+    { id: "option3", label: "학교에서 작은 연결을 만드는 경험", detail: "친구 사이의 교류와 도움으로 확장" },
+    { id: "option4", label: "아직 정하지 않음", detail: "여러 가능성을 열어둠" }] },
+  audience: { prompt: "이 생각을 어떤 다른 장면으로 넓혀볼까?", reason: "지금 사용할 사람을 하나로 좁히지 않는다.", multiple: true, options: [
+    { id: "option1", label: "친구들과 물건을 나누는 일상", detail: "우산·필기구·생활 물품의 공유" },
+    { id: "option2", label: "비 오는 날의 학교 활동", detail: "작은 행사나 즐거운 경험" },
+    { id: "option3", label: "지역의 도움과 교류", detail: "학교 밖에서도 적용할 가능성 탐색" },
+    { id: "option4", label: "아직 정하지 않음", detail: "활용 장면은 미정" }] },
+  problem: { prompt: "이 아이디어를 통해 새롭게 풀어볼 문제는 무엇인가?", reason: "처음 떠올린 불편 밖의 문제도 살펴본다.", multiple: true, options: [
+    { id: "option1", label: "필요한 물건을 서로 찾기 어려움", detail: "누가 어떤 도움을 줄 수 있는지 연결" },
+    { id: "option2", label: "쓰지 않는 물건이 쌓임", detail: "공유와 다시 사용하기로 연결" },
+    { id: "option3", label: "도움을 주고받을 기회가 적음", detail: "작은 교류를 만드는 경험" },
+    { id: "option4", label: "아직 정하지 않음", detail: "문제도 탐색하며 발견" }] },
+  solution: { prompt: "원래 생각에 어떤 파생 기능을 더해볼까?", reason: "함께 관심 있는 기능을 모두 기록한다.", multiple: true, options: [
+    { id: "option1", label: "물건의 사연을 남기는 기록", detail: "누가 어떤 순간에 사용했는지 작은 이야기로 보관" },
+    { id: "option2", label: "반납을 돕는 표시와 안내", detail: "종이 표식이나 눈에 보이는 안내로 도움" },
+    { id: "option3", label: "고친 물건을 다시 나누기", detail: "수리와 재사용 활동으로 연결" },
+    { id: "option4", label: "아직 정하지 않음", detail: "새 기능을 더 생각해보기" }] },
+  constraints: { prompt: "어떤 다른 원리나 활동과 연결해볼까?", reason: "예산을 정하기보다 연결과 변형을 살펴본다.", multiple: true, options: [
+    { id: "option1", label: "도서관처럼 빌리고 돌려주는 원리", detail: "다른 생활 물품에도 적용할 가능성" },
+    { id: "option2", label: "교환과 감사 표현", detail: "도움을 주고받는 재미와 관계" },
+    { id: "option3", label: "기록을 모아 발견하는 전시", detail: "사용 경험을 작은 이야기나 전시로 변형" },
+    { id: "option4", label: "아직 정하지 않음", detail: "연결할 원리는 더 찾아보기" }] },
+  success: { prompt: "나중에 다시 발전시킬 때 어떤 힌트를 남겨둘까?", reason: "지금 실행 계획을 확정하지 않아도 기록할 수 있다.", multiple: true, options: [
+    { id: "option1", label: "관심 있는 기능을 묶어 보관", detail: "다음에 꺼내 볼 여러 후보를 남김" },
+    { id: "option2", label: "비슷한 사례와 참고 자료", detail: "다른 프로젝트와 연결할 재료" },
+    { id: "option3", label: "다음에 생각해볼 질문", detail: "미정인 부분과 새 궁금증을 남김" },
+    { id: "option4", label: "아직 정하지 않음", detail: "생각 자체를 보관" }] },
+};
+
 function exampleDraft(state: SessionState): Draft {
   const value = (topic: Topic) => state.answers.find((a) => a.topic === topic)?.value || "미정";
+  if (dialogueMode(state) === "explore") return { title: "우산 공유에서 넓혀본 가능성", content: {
+    step1: { kind: "idea", name: "우산 공유에서 시작한 아이디어", fields: ["소셜/커뮤니티"], difficulty: "casual", source: "사용자 메모", url: "", description: state.seed },
+    step2: { principle: `아이디어의 씨앗: ${value("goal")}`, strengths: "[AI 제안 · 데모] 물건 나눔에서 교류·기록·재사용으로 확장할 가능성이 있다.", limits: "[검증 필요 · 데모] 각 가능성의 실제 효과와 운영 방법은 나중에 확인할 수 있다." },
+    step3: { idea_name: "공유에서 교류와 기록으로", application: `관심 있는 활용 장면: ${value("audience")}\n파생 기능: ${value("solution")}\n연결과 변형: ${value("constraints")}`, similar_ideas: "실제 검색 연결 후 확인 필요", feasibility: "unknown", feasibility_reason: "실행 범위를 정하기 전이므로 판단 보류다." },
+    summary: { thing: "우산 공유에서 출발한 여러 가능성", problem: value("problem") }, execution: null,
+  }, suggestions: ["[AI 제안 · 데모] 물건에 얽힌 사연을 작은 기록이나 전시로 연결하기", "[AI 제안 · 데모] 수리와 나눔을 함께 하는 활동으로 연결하기"], open_questions: [value("success"), "어떤 가능성을 다음에 발전시킬지 미정이다."] };
   return { title: "비 오는 날, 학교 우산 공유", content: {
     step1: { kind: "idea", name: "학교 우산 공유", fields: ["소셜/커뮤니티"], difficulty: "casual", source: "사용자 메모", url: "", description: state.seed },
     step2: { principle: `필요한 학생이 우산을 빌리고 다시 돌려주는 방식.\n해결할 문제: ${value("problem")}`, strengths: "[AI 제안 · 데모] 학교 안에서 작게 시작해 불편을 확인할 수 있다.", limits: "[검증 필요 · 데모] 우산 확보, 학교 허락과 반납 관리를 확인해야 한다." },
@@ -42,14 +81,21 @@ function exampleDraft(state: SessionState): Draft {
 
 // Only the development preview imports this example transport. Production calls /api/ai.
 export function createDemoTransport() {
-  let session: Session | null = null;
+  const sessions = new Map<string, Session>();
+  let count = 0;
   return async (request: AiRequest): Promise<Session> => {
+    const session = request.action === "start" ? null : sessions.get(request.id) ?? null;
     const state = await transition(session?.state ?? null, request, {
-      askQuestion: async (s, topic) => ({ ...questions[topic], topic, multiple: true, reason: s.clarification ? "기타에 직접 적거나 미정으로 남길 수 있다." : questions[topic].reason }),
+      askQuestion: async (s, topic) => {
+        const q = (dialogueMode(s) === "explore" ? exploreQuestions : questions)[topic];
+        return { ...q, topic, multiple: true, reason: s.clarification ? "기타에 직접 적거나 미정으로 남길 수 있다." : q.reason };
+      },
       makeDraft: async (s) => exampleDraft(s),
       researchIdea: async () => ({ text: "미리보기에서는 실제 검색을 실행하지 않습니다. AI 연결 후 관련 글·사진·영상과 출처가 여기에 표시됩니다.", citations: [], resources: [] }),
     });
-    session = { id: "00000000-0000-4000-8000-000000000001", revision: (session?.revision ?? -1) + 1, state, updated_at: new Date().toISOString() };
-    return session;
+    const isNew = request.action === "start" || request.action === "fork_focus";
+    const next: Session = { id: isNew ? `00000000-0000-4000-8000-${String(++count).padStart(12, "0")}` : session!.id, revision: isNew ? 0 : session!.revision + 1, state, updated_at: new Date().toISOString() };
+    sessions.set(next.id, next);
+    return next;
   };
 }

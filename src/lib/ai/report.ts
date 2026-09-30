@@ -1,5 +1,5 @@
 import type { ReportContent } from "@/types/report";
-import { safeUrl, type SessionState } from "./schema";
+import { dialogueMode, safeUrl, type SessionState } from "./schema";
 import { referenceThumbnail } from "../images";
 
 export function draftToReport(state: SessionState): { title: string; content: ReportContent } | null {
@@ -11,6 +11,7 @@ export function draftToReport(state: SessionState): { title: string; content: Re
       ...content,
       ...(execution ? { execution } : {}),
       ai_notes: {
+        mode: dialogueMode(state),
         // Raw conversation metadata is not separately attached to shared reports.
         sources: (state.research?.resources ?? []).filter((r) => safeUrl(r.url)).map((source) => {
           const { title, url, kind, credit } = source;
