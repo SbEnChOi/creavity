@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const TOPICS = ["goal", "audience", "problem", "solution", "constraints", "success"] as const;
 export type Topic = (typeof TOPICS)[number];
+export const REFINEMENT_PRESETS = ["문장을 더 간결하게 첨삭해줘", "장점과 한계를 객관적으로 평가해줘", "원래 방향 안에서 추가 아이디어를 제안해줘"] as const;
 export const TOPIC_LABELS: Record<Topic, string> = {
   goal: "목적", audience: "대상과 상황", problem: "해결할 문제",
   solution: "해결 방식", constraints: "범위와 제약", success: "성공 기준",
@@ -45,6 +46,7 @@ export type SessionState = {
   history?: Answer[];
   pendingAnswer?: Answer | null;
   refinementRequest?: string;
+  pendingRefinement?: { topic: Topic; feedback: string } | null;
 };
 export type Session = { id: string; revision: number; state: SessionState; updated_at: string };
 
@@ -56,6 +58,8 @@ export const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("confirm"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
   z.object({ action: z.literal("research"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
   z.object({ action: z.literal("refine"), id: z.string().uuid(), revision: z.number().int().nonnegative(), feedback: z.string().trim().min(3).max(2000) }),
+  z.object({ action: z.literal("confirm_refinement"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
+  z.object({ action: z.literal("cancel_refinement"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
 ]);
 export type AiRequest = z.infer<typeof requestSchema>;
 

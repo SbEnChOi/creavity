@@ -1,7 +1,7 @@
 import { transition as advance, type FlowDependencies } from "./flow";
 import { z } from "zod";
 import { AiError, structured } from "./provider";
-import { draftSchema, nextTopic, questionSchema, safeUrl, TOPICS, TOPIC_LABELS, type AiRequest, type Answer, type Draft, type Question, type SessionState, type Topic } from "./schema";
+import { draftSchema, nextTopic, questionSchema, safeUrl, TOPICS, TOPIC_LABELS, REFINEMENT_PRESETS, type AiRequest, type Answer, type Draft, type Question, type SessionState, type Topic } from "./schema";
 import { researchIdea } from "./research";
 
 const contract = `너는 크래비의 한국어 아이디어 구체화 도우미다. 사용자의 원문과 실제 선택/직접 답변이 가장 중요하다.
@@ -67,6 +67,8 @@ export async function assessAnswer(state: SessionState, answer: Answer) {
 }
 
 export async function assessFeedback(state: SessionState, feedback: string): Promise<Topic | null> {
+  // These exact editing requests cannot change confirmed intent. Free text is still assessed.
+  if (REFINEMENT_PRESETS.some((preset) => preset === feedback.trim())) return null;
   const result = await structured("feedback_direction", z.object({ topic: z.enum(TOPICS).nullable() }), `${contract}
 첨삭 요청이 확인된 목적, 대상/상황, 문제, 해결 방식, 제약, 성공 기준을 바꾸거나 서로 충돌하는지 확인한다.
 방향을 바꾸는 요청이면 다시 확인할 가장 이른 topic을 골라라. 방향을 몰래 변경한 초안을 만들지 않는다.
