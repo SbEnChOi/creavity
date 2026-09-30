@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createDemoTransport, DEMO_SEED } from "../src/lib/ai/demo";
 import { draftToReport } from "../src/lib/ai/report";
-import { transition } from "../src/lib/ai/engine";
-import { TOPICS, nextTopic, readAnswer, safeUrl, videoId, requestSchema, type Question } from "../src/lib/ai/schema";
+import { transition, assessFeedback } from "../src/lib/ai/engine";
+import { TOPICS, REFINEMENT_PRESETS, nextTopic, readAnswer, safeUrl, videoId, requestSchema, type Question } from "../src/lib/ai/schema";
 import { commonsImages, extractCitations, extractVideoResources, searchCommonsImages } from "../src/lib/ai/research";
 import { AiError, response } from "../src/lib/ai/provider";
 
@@ -120,7 +120,16 @@ test("direction-changing refinement asks again; ordinary editing keeps the confi
     researchIdea: async () => { throw new Error("must not research"); },
     assessFeedback: async () => "audience" as const,
   };
-  const changed = await transition(s.state, { action: "refine", id: s.id, revision: s.revision, feedback: "학생 대신 교직원을 대상으로 바꿔줘" }, deps);
+  const pending = await transition(s.state, { action: "refine", id: s.id, revision: s.revision, feedback: "학생 대신 교직원을 대상으로 바꿔줘" }, deps);
+  assert.deepEqual(pending.answers, s.state.answers);
+  assert.deepEqual(pending.draft, s.state.draft);
+  assert.equal(pending.confirmed, true);
+  assert.equal(pending.pendingRefinement?.topic, "audience");
+  const cancelled = await transition(pending, { action: "cancel_refinement", id: s.id, revision: s.revision }, deps);
+  assert.deepEqual(cancelled.answers, s.state.answers);
+  assert.deepEqual(cancelled.draft, s.state.draft);
+  assert.equal(cancelled.pendingRefinement, null);
+  const changed = await transition(pending, { action: "confirm_refinement", id: s.id, revision: s.revision }, deps);
   assert.equal(drafts, 0);
   assert.equal(changed.answers.length, 1);
   assert.equal(changed.question?.topic, "audience");
@@ -133,6 +142,12 @@ test("direction-changing refinement asks again; ordinary editing keeps the confi
   assert.equal(drafts, 1);
   assert.equal(edited.phase, "review");
   assert.deepEqual(edited.answers, s.state.answers);
+});
+
+test("built-in editing presets preserve intent without a model direction classification", async () => {
+  const send = createDemoTransport();
+  const s = await send(start);
+  for (const feedback of REFINEMENT_PRESETS) assert.equal(await assessFeedback(s.state, feedback), null);
 });
 
 test("research refresh preserves source links already used by a draft", async () => {

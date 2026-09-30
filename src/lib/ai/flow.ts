@@ -55,6 +55,7 @@ export async function transition(current: SessionState | null, request: AiReques
       state.answers = state.answers.slice(0, index);
       state.pendingAnswer = null; state.clarification = "";
       state.refinementRequest = "";
+      state.pendingRefinement = null;
       state.confirmed = false; state.phase = "questions"; state.draft = null; state.research = null;
       state.question = await deps.askQuestion(state, request.topic);
       break;
@@ -75,16 +76,28 @@ export async function transition(current: SessionState | null, request: AiReques
       break;
     case "refine": {
       if (state.phase !== "review" || !state.confirmed || !state.draft) throw new AiError("검토할 초안이 없습니다.", 400);
+      if (state.pendingRefinement) throw new AiError("먼저 방향 변경 여부를 선택해주세요.", 400);
       const topic = deps.assessFeedback ? await deps.assessFeedback(state, request.feedback) : null;
       if (topic) {
-        state.answers = state.answers.slice(0, state.answers.findIndex((a) => a.topic === topic));
-        state.refinementRequest = request.feedback;
-        state.clarification = `첨삭 요청이 기존 방향과 달라 다시 확인해야 합니다. 실제 사용자 요청: ${request.feedback}`;
-        state.pendingAnswer = null; state.confirmed = false; state.phase = "questions"; state.draft = null; state.research = null;
-        state.question = await deps.askQuestion(state, topic);
+        state.pendingRefinement = { topic, feedback: request.feedback };
       } else {
         state.draft = await deps.makeDraft(state, request.feedback);
       }
+      break;
+    }
+    case "cancel_refinement":
+      if (!state.pendingRefinement) throw new AiError("확인할 방향 변경이 없습니다.", 400);
+      state.pendingRefinement = null;
+      break;
+    case "confirm_refinement": {
+      if (state.phase !== "review" || !state.pendingRefinement) throw new AiError("확인할 방향 변경이 없습니다.", 400);
+      const { topic, feedback } = state.pendingRefinement;
+      state.answers = state.answers.slice(0, state.answers.findIndex((a) => a.topic === topic));
+      state.refinementRequest = feedback;
+      state.clarification = `사용자가 방향 변경을 확인했습니다. 실제 사용자 요청: ${feedback}`;
+      state.pendingRefinement = null; state.pendingAnswer = null;
+      state.confirmed = false; state.phase = "questions"; state.draft = null; state.research = null;
+      state.question = await deps.askQuestion(state, topic);
       break;
     }
   }
