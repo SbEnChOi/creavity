@@ -166,10 +166,10 @@ export default function IdeasClient({
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-foreground/40 inline-flex items-center gap-1">
+          <Link href="/ai" className="text-[11px] text-foreground/50 hover:text-accent inline-flex items-center gap-1">
             <Sparkles size={11} strokeWidth={1.75} />
-            추후 AI로 자동 정리 예정
-          </span>
+            AI와 아이디어 구체화하기
+          </Link>
           <button
             type="submit"
             disabled={!title.trim() || submitting}
@@ -237,6 +237,8 @@ export default function IdeasClient({
                       {idea.body}
                     </p>
                   )}
+
+                  {isMine && <Link href={`/ai?idea=${idea.id}`} className="mb-3 inline-flex items-center gap-1.5 rounded-md bg-surface px-2.5 py-1.5 text-xs text-foreground/65 hover:text-accent"><Sparkles size={12} />이 메모를 AI로 구체화</Link>}
 
                   <div className="flex items-center justify-between gap-2 text-xs text-foreground/50">
                     <Link

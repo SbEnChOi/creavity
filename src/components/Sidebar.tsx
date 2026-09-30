@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info, Lightbulb } from "lucide-react";
+import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info, Lightbulb, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const menuItems = [
   { href: "/dashboard", label: "내 보고서", icon: FileText },
   { href: "/new", label: "새로 작성", icon: PenSquare },
+  { href: "/ai", label: "AI 구체화", icon: Sparkles },
   { href: "/feed", label: "동아리 피드", icon: Users },
   { href: "/ideas", label: "아이디어 공유", icon: Lightbulb },
   { href: "/settings", label: "환경설정", icon: Settings },
@@ -56,13 +57,13 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   };
 
   return (
-    <aside className="w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden">
-      <div className="px-5 pt-6 pb-4">
+    <aside className="w-16 md:w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden">
+      <div className="px-3 md:px-5 pt-6 pb-4">
         <Link href="/dashboard" className="inline-flex items-center gap-2">
           <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-white text-sm font-bold">
             C
           </span>
-          <span className="text-sm font-semibold text-foreground">Creavy</span>
+          <span className="hidden md:inline text-sm font-semibold text-foreground">Creavy</span>
         </Link>
       </div>
 
@@ -82,14 +83,15 @@ export default function Sidebar({ profile }: { profile: Profile }) {
               <li key={href}>
                 <Link
                   href={href}
+                  aria-label={label}
                   className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
                     active
                       ? "bg-black/[0.06] text-foreground font-medium"
                       : "text-foreground/70 hover:bg-black/[0.04] hover:text-foreground"
                   }`}
                 >
-                  <Icon size={16} strokeWidth={1.75} />
-                  <span>{label}</span>
+                  <Icon size={16} strokeWidth={1.75} className="shrink-0" />
+                  <span className="hidden md:inline">{label}</span>
                 </Link>
               </li>
             );
@@ -113,14 +115,14 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         <button
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
-          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-black/[0.04] transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-1 md:px-2.5 py-2 rounded-md hover:bg-black/[0.04] transition-colors text-left"
         >
           <span
             className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold shrink-0 ${avatarBg[color] ?? avatarBg.gray}`}
           >
             {initial}
           </span>
-          <span className="flex-1 min-w-0">
+          <span className="hidden md:block flex-1 min-w-0">
             <span className="block text-sm font-medium text-foreground truncate">
               {name}
             </span>

@@ -5,7 +5,7 @@ import DashboardClient from "./dashboard-client";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

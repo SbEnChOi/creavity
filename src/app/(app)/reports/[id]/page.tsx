@@ -5,11 +5,12 @@ import ReportDetail from "./report-detail";
 export const dynamic = "force-dynamic";
 
 export default async function ReportPage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const supabase = createSupabaseServerClient();
+  const params = await paramsPromise;
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

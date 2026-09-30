@@ -6,6 +6,8 @@ import { Check, Loader2, Globe, Lock, UserCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { FIELD_OPTIONS } from "@/lib/constants";
 import ImageUploadBox from "@/components/ImageUploadBox";
+import ReportAiNotes from "@/components/ai/ReportAiNotes";
+import Link from "next/link";
 import type { Report, ReportContent, Visibility } from "@/types/report";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -16,15 +18,15 @@ const visibilityOptions: { value: Visibility; label: string; Icon: typeof Globe 
   { value: "public", label: "전체 공개", Icon: Globe },
 ];
 
-export default function ReportEditor({ initialReport }: { initialReport?: Report } = {}) {
+export default function ReportEditor({ initialReport, initialAiDraft, aiSessionId }: { initialReport?: Report; initialAiDraft?: { title: string; content: ReportContent }; aiSessionId?: string } = {}) {
   const router = useRouter();
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const [reportId, setReportId] = useState<string | null>(initialReport?.id ?? null);
-  const [title, setTitle] = useState(initialReport?.title ?? "");
+  const [title, setTitle] = useState(initialReport?.title ?? initialAiDraft?.title ?? "");
   const [edition, setEdition] = useState<number | "">(initialReport?.edition ?? "");
   const [content, setContent] = useState<ReportContent>(
-    initialReport?.content ?? { step1: {}, step2: {}, step3: {}, summary: {} }
+    initialReport?.content ?? initialAiDraft?.content ?? { step1: {}, step2: {}, step3: {}, summary: {} }
   );
   const [visibility, setVisibility] = useState<Visibility>(
     (initialReport?.visibility ?? "private") as Visibility
@@ -39,7 +41,8 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null));
   }, [supabase]);
 
-  const reportIdRef = useRef<string | null>(null);
+  const reportIdRef = useRef<string | null>(initialReport?.id ?? null);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
   const firstRenderRef = useRef(true);
   const statusRef = useRef<"draft" | "published">(initialReport?.status ?? "draft");
 
@@ -64,39 +67,46 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
 
   const doSave = async ({ asDraft }: { asDraft: boolean }): Promise<string | null> => {
     if (!title.trim() && !hasContent(content)) return null;
-    setSaveState("saving");
-    setSaveError(null);
+    const snapshot = buildPayload();
+    const job = saveQueue.current.then(async (): Promise<string | null> => {
+      setSaveState("saving");
+      setSaveError(null);
 
-    // 자동저장은 현재 status 유지, 명시적 발행은 published
-    const status = asDraft ? statusRef.current : "published";
-    const payload = buildPayload({ status });
-    const currentId = reportIdRef.current;
+      // 자동저장은 현재 status 유지, 명시적 발행은 published
+      const status = asDraft ? statusRef.current : "published";
+      const payload = { ...snapshot, status };
+      const currentId = reportIdRef.current;
 
-    if (currentId) {
-      const { error } = await supabase.from("reports").update(payload).eq("id", currentId);
-      if (error) { setSaveState("error"); setSaveError(error.message); return null; }
-      setSaveState("saved"); setSavedAt(new Date());
-      return currentId;
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setSaveState("error"); setSaveError("로그인이 필요합니다."); return null; }
+      if (currentId) {
+        const { error } = await supabase.from("reports").update(payload).eq("id", currentId);
+        if (error) { setSaveState("error"); setSaveError(error.message); return null; }
+        if (!asDraft) statusRef.current = "published";
+        setSaveState("saved"); setSavedAt(new Date());
+        return currentId;
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setSaveState("error"); setSaveError("로그인이 필요합니다."); return null; }
 
-      const { data, error } = await supabase
-        .from("reports")
-        .insert({ ...payload, author_id: user.id })
-        .select("id")
-        .single();
+        const { data, error } = await supabase
+          .from("reports")
+          .insert({ ...payload, author_id: user.id })
+          .select("id")
+          .single();
 
-      if (error || !data) {
-        setSaveState("error");
-        setSaveError(error?.message ?? "알 수 없는 오류");
-        return null;
+        if (error || !data) {
+          setSaveState("error");
+          setSaveError(error?.message ?? "알 수 없는 오류");
+          return null;
+        }
+        setReportId(data.id);
+        reportIdRef.current = data.id;
+        if (!asDraft) statusRef.current = "published";
+        setSaveState("saved"); setSavedAt(new Date());
+        return data.id;
       }
-      setReportId(data.id);
-      reportIdRef.current = data.id;
-      setSaveState("saved"); setSavedAt(new Date());
-      return data.id;
-    }
+    }).catch(() => { setSaveState("error"); setSaveError("저장 연결에 문제가 있습니다. 다시 시도해주세요."); return null; });
+    saveQueue.current = job;
+    return job;
   };
 
   const handlePublish = async () => {
@@ -104,7 +114,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
     setPublishing(true);
     setSaveError(null);
 
-    const id = reportIdRef.current ?? (await doSave({ asDraft: false }));
+    const id = await doSave({ asDraft: false });
     if (!id) { setPublishing(false); return; }
 
     const { error } = await supabase
@@ -159,7 +169,9 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
   ) => setContent((prev) => ({ ...prev, [key]: { ...(prev[key] ?? {}), ...patch } }));
 
   return (
-    <div className="px-10 py-10 max-w-3xl">
+    <div className="px-5 md:px-10 py-10 max-w-3xl">
+      {initialAiDraft && <div className="mb-6 rounded-lg border border-border-default bg-surface p-4 text-xs leading-6 text-foreground/65">AI 구체화 초안입니다. 내용을 검토한 뒤 저장하거나 발행해주세요. <Link href={`/ai?session=${aiSessionId}`} className="text-accent hover:underline">대화로 돌아가기</Link></div>}
+      {!initialReport && !initialAiDraft && <Link href="/ai" className="mb-6 inline-block text-xs text-foreground/50 hover:text-accent">메모부터 시작하고 싶다면 → AI와 구체화하기</Link>}
       <div className="mb-6 flex items-center justify-between text-xs text-foreground/50">
         <SaveIndicator state={saveState} savedAt={savedAt} />
       </div>
@@ -261,7 +273,7 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
         <Field label="실현 가능성">
           <Segmented
             value={content.step3?.feasibility ?? ""}
-            options={[{ value: "easy", label: "쉬움" }, { value: "medium", label: "보통" }, { value: "hard", label: "어려움" }]}
+            options={[{ value: "easy", label: "쉬움" }, { value: "medium", label: "보통" }, { value: "hard", label: "어려움" }, { value: "unknown", label: "판단 보류" }]}
             onChange={(v) => updateStep("step3", { feasibility: v })}
           />
         </Field>
@@ -287,10 +299,18 @@ export default function ReportEditor({ initialReport }: { initialReport?: Report
         </Field>
       </Section>
 
+      {content.execution && <Section number={5} label="첫 실행 계획 (선택)">
+        <Field label="대상 사용자"><Textarea value={content.execution.audience ?? ""} onChange={(v) => updateStep("execution", { audience: v })} placeholder="누구를 위한 아이디어인가요?" /></Field>
+        <Field label="사용 상황"><Textarea value={content.execution.scenario ?? ""} onChange={(v) => updateStep("execution", { scenario: v })} placeholder="언제 어디에서 사용할까요?" /></Field>
+        <Field label="첫 실험"><Textarea value={content.execution.first_test ?? ""} onChange={(v) => updateStep("execution", { first_test: v })} placeholder="가장 작게 시험해볼 방법" /></Field>
+        <Field label="성공 기준"><Textarea value={content.execution.success_metric ?? ""} onChange={(v) => updateStep("execution", { success_metric: v })} placeholder="무엇을 보고 성공을 판단할까요?" /></Field>
+      </Section>}
+      <ReportAiNotes notes={content.ai_notes} />
       <div className="mt-12 pt-6 border-t border-border-default space-y-4">
         <VisibilityChips value={visibility} onChange={setVisibility} />
 
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-3">
+        <button type="button" onClick={() => void doSave({ asDraft: true })} disabled={saveState === "saving" || publishing || (!title.trim() && !hasContent(content))} className="ai-secondary">초안 저장</button>
         <button
           type="button"
           onClick={handlePublish}

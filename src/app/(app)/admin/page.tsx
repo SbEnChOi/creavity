@@ -6,7 +6,7 @@ import AdminClient, { type AdminMember, type AdminReport } from "./admin-client"
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

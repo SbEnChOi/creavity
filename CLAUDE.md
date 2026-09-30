@@ -5,7 +5,7 @@
 노션(Notion) 스타일의 미니멀한 디자인.
 
 ## 기술 스택
-- Next.js 14 (App Router) + TypeScript
+- Next.js 15 (App Router) + React 19 + TypeScript
 - Tailwind CSS
 - Supabase (DB + Auth + RLS)
 - Pretendard Variable 폰트
@@ -30,6 +30,14 @@ RLS 정책 적용됨 — 프론트에서 권한 체크 불필요.
 4. 동아리 피드
 5. 보고서 상세 + 반응/댓글
 6. 환경설정 (짝선배/짝후배, 멤버 목록)
+7. AI 구체화 (/ai): 선택형 질문 → 사용자 방향 확인 → 리서치/초안 → 새로 작성
+
+## AI 구현
+- 서버 전용 OpenAI Responses API. 설정은 `.env.example` 참고.
+- `supabase/migrations/202609300001_ai_studio.sql`로 ai_sessions/ai_usage와 RLS·quota·lock 함수 적용.
+- 대화는 본인만 접근. 사용자 확인 전 초안 생성 금지. 기존 양식이 기본이며 execution/ai_notes는 선택 확장.
+- 개발용 `/ai-preview`는 예시 응답만 사용하고 운영 환경에서 열리지 않음.
+- 테스트/검증: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`.
 
 ## 보고서 양식 구조 (content JSON)
 Step1: 부분(기술/아이디어), 이름, 분야, 발견난이도, 발견경로, 출처/링크, 설명

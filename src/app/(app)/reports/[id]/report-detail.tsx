@@ -8,6 +8,7 @@ import {
   Edit2, Lightbulb, HelpCircle, HandMetal, Microscope, Printer,
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import ReportAiNotes from "@/components/ai/ReportAiNotes";
 import type { Report, ReportContent, Visibility } from "@/types/report";
 import type { CommentRow } from "./page";
 
@@ -33,6 +34,7 @@ const DIFFICULTY_LABEL: Record<string, string> = {
 };
 const FEASIBILITY_LABEL: Record<string, string> = {
   easy: "쉬움", medium: "보통", hard: "어려움",
+  unknown: "판단 보류",
 };
 const KIND_LABEL: Record<string, string> = {
   tech: "기술", idea: "아이디어",
@@ -242,6 +244,14 @@ export default function ReportDetail({
           <Row label="해결하려는 문제" value={c.summary?.problem} />
         </ContentSection>
       )}
+
+      {c.execution && <ContentSection number={5} label="첫 실행 계획">
+        <Prose label="대상 사용자" value={c.execution.audience} />
+        <Prose label="사용 상황" value={c.execution.scenario} />
+        <Prose label="첫 실험" value={c.execution.first_test} />
+        <Prose label="성공 기준" value={c.execution.success_metric} />
+      </ContentSection>}
+      <ReportAiNotes notes={c.ai_notes} />
 
       {/* ─── 반응 ─── */}
       <div className="mt-12 pt-8 border-t border-border-default print:hidden">
