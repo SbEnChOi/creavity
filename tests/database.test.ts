@@ -76,3 +76,19 @@ test("legacy report view preserves private-report RLS for each viewer", async ()
     await assert.rejects(db.query("update public.reports set author_id=$1", [bob]), /row-level security/);
   } finally { await db.close(); }
 });
+
+test("optional edition migration allows empty editor values while preserving existing editions", async () => {
+  const db = new PGlite();
+  const migration = await readFile(new URL("../supabase/migrations/202609300003_optional_report_edition.sql", import.meta.url), "utf8");
+  try {
+    await db.exec(migration);
+    await db.exec("create table public.reports (title text, edition smallint not null default 1); insert into public.reports(title,edition) values ('existing',3);");
+    await assert.rejects(db.query("insert into public.reports values ('AI draft',null)"), /not-null constraint/);
+    await db.exec(migration);
+    await db.exec(migration);
+    await db.exec("insert into public.reports values ('AI draft',null); insert into public.reports(title) values ('default');");
+    assert.deepEqual((await db.query("select edition from public.reports order by title")).rows, [{ edition: null }, { edition: 1 }, { edition: 3 }]);
+    await db.exec("update public.reports set edition=null where title='existing'");
+    assert.equal((await db.query<{ edition: number | null }>("select edition from public.reports where title='existing'")).rows[0].edition, null);
+  } finally { await db.close(); }
+});

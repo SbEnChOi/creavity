@@ -18,7 +18,7 @@ AI 제안, 검증할 사항, 검색 출처를 분리합니다. 원문 메모와 
 
 1. `npm ci`를 실행합니다. Node.js 20 이상을 권장합니다.
 2. `.env.example`을 `.env.local`로 복사해 기존 Supabase URL·공개 키와 서버 전용 `OPENAI_API_KEY`를 설정합니다. API 키를 `NEXT_PUBLIC_` 변수로 만들지 마세요. `OPENAI_MODEL`의 기본값은 `gpt-5.4-mini`이며 해당 API 프로젝트에서 사용 가능한 모델로 변경할 수 있습니다.
-3. 기존 Supabase 프로젝트의 SQL Editor에서 `supabase/migrations/202609300001_ai_studio.sql`, `202609300002_report_view_privacy.sql`을 순서대로 한 번 실행합니다. 첫 마이그레이션은 AI 대화·사용량 저장소를 추가합니다. 두 번째는 기존 조회 뷰에 보고서 RLS를 적용하고 작성자의 문서 수정 권한을 추가합니다. 기존 문서 데이터는 그대로 유지합니다.
+3. 기존 Supabase 프로젝트의 SQL Editor에서 `supabase/migrations/202609300001_ai_studio.sql`, `202609300002_report_view_privacy.sql`, `202609300003_optional_report_edition.sql`을 순서대로 한 번 실행합니다. AI 저장소, 기존 조회 뷰 RLS·작성자 수정 권한, 선택 항목인 차수의 null 저장 허용을 적용합니다. 기존 문서 데이터는 그대로 유지합니다.
 4. `npm run ai:check`로 인증 서비스·AI 테이블·모델 접근을 확인하고 `npm run dev`로 로그인과 대화를 확인합니다. `npm run ai:check -- --live`는 실제 질문을 생성하며 API 사용료가 발생합니다. 점검 출력에 키는 포함하지 않습니다.
 5. Vercel에도 동일한 환경 변수를 설정하고 배포합니다. AI route는 최대 120초 실행 시간을 선언하므로 사용 중인 Vercel 플랜의 함수 실행 시간과 API 이용 한도를 확인합니다.
 
