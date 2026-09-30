@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Creavy · 크래비
 
-## Getting Started
+동아리 아이디어·보고서 공유 플랫폼. Next.js 15, React 19, TypeScript, Tailwind CSS, Supabase를 사용합니다.
 
-First, run the development server:
+## AI 구체화
+
+`/ai`에서 메모를 붙여넣거나 ‘아이디어 공유 → 이 메모를 AI로 구체화’로 시작합니다.
+
+1. 목적 → 대상·상황 → 문제 → 해결 방식 → 제약 → 성공 기준을 메모에 맞는 선택형 질문으로 확인합니다. 질문마다 기타 직접 작성, 쉬운 재질문, 답변 수정이 가능합니다.
+2. 답변을 모두 모은 후 사용자가 방향을 확인해야 초안을 생성합니다. 추가 질문에서도 앞선 직접 답변을 보존합니다. 답변 수정은 해당 답변 이후의 내용을 다시 확인하고 이전 초안과 리서치를 무효화합니다.
+3. 기본 작성 양식(발견·분석·확장·한 줄 정리)에 맞춰 정리합니다. 시작할 때 ‘기본 + 실행 계획’을 선택하면 대상·상황·첫 실험·성공 기준을 선택 항목으로 추가합니다.
+4. 인터넷 검색을 선택하면 관련 사례, 출처가 있는 글·영상, Wikimedia Commons 이미지 자료를 함께 제공합니다. 없는 결과를 만들어 표시하지 않습니다. 검색 실패 시 답변을 유지하고 재시도할 수 있습니다.
+5. 초안에서 첨삭·객관적 평가·추가 아이디어를 요청한 뒤 ‘새로 작성에 적용’으로 옮깁니다. 첨삭 요청이 기존 방향을 바꾸면 관련 질문과 방향 확인을 다시 거칩니다. 기본 공개 범위는 비공개입니다. ‘초안 저장’ 또는 기존 ‘발행하기’를 사용합니다.
+
+AI 제안, 검증할 사항, 검색 출처를 분리합니다. 원문 메모와 대화 기록을 공유 보고서에 별도 첨부하지 않습니다. 대화는 본인만 접근 가능한 Supabase RLS로 저장하고, 시간당 사용자별 40회 요청과 중복 처리 제한을 적용합니다. 유료 AI 요청은 회원 계정에만 제공하며 게스트는 기존 공유 기능을 이용할 수 있습니다.
+
+## 연결 및 배포
+
+1. `npm ci`를 실행합니다. Node.js 20 이상을 권장합니다.
+2. `.env.example`을 `.env.local`로 복사해 기존 Supabase URL·공개 키와 서버 전용 `OPENAI_API_KEY`를 설정합니다. API 키를 `NEXT_PUBLIC_` 변수로 만들지 마세요. `OPENAI_MODEL`의 기본값은 `gpt-5.4-mini`이며 해당 API 프로젝트에서 사용 가능한 모델로 변경할 수 있습니다.
+3. 기존 Supabase 프로젝트의 SQL Editor에서 `supabase/migrations/202609300001_ai_studio.sql`, `202609300002_report_view_privacy.sql`을 순서대로 한 번 실행합니다. 첫 마이그레이션은 AI 대화·사용량 저장소를 추가합니다. 두 번째는 기존 조회 뷰에 보고서 RLS를 적용하고 작성자의 문서 수정 권한을 추가합니다. 기존 문서 데이터는 그대로 유지합니다.
+4. `npm run ai:check`로 인증 서비스·AI 테이블·모델 접근을 확인하고 `npm run dev`로 로그인과 대화를 확인합니다. `npm run ai:check -- --live`는 실제 질문을 생성하며 API 사용료가 발생합니다. 점검 출력에 키는 포함하지 않습니다.
+5. Vercel에도 동일한 환경 변수를 설정하고 배포합니다. AI route는 최대 120초 실행 시간을 선언하므로 사용 중인 Vercel 플랜의 함수 실행 시간과 API 이용 한도를 확인합니다.
+
+AI 키가 설정되지 않으면 준비 중 안내를 표시하며 예시 답변을 실제 AI로 대신 표시하지 않습니다. Supabase 설정은 기존 로그인·저장 기능에도 필요합니다. 사용자 메모와 답변은 OpenAI로 전달되며 검색을 선택한 경우 관련 주제가 검색 서비스로도 전달됩니다.
+
+API 구현은 [OpenAI Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)와 [Web Search](https://developers.openai.com/api/docs/guides/tools-web-search)를 따릅니다. 사진 원본·제작자·라이선스를 표시하며 영상은 사용자가 미리보기를 눌렀을 때 로드합니다.
+
+## 개발 검증
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run typecheck
+npm run lint
+npm test
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+테스트는 실제 외부 API를 호출하지 않습니다. 대화의 상태 전환, 답변 무결성, 의도 확인 전 생성 금지, 오류 보존, 사진 검색 재시도·실제 검색 출처의 영상 URL과 임시 PostgreSQL(PGlite)에서 실제 마이그레이션·RLS·사용량·동시 요청 잠금을 검증합니다. GitHub Actions는 PR과 main 변경 시 타입·린트·테스트·빌드를 자동 확인합니다. 운영 연결은 `npm run ai:check`와 로그인한 브라우저로 확인합니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+개발 서버의 `/ai-preview`는 연결 정보 없이 선택형 질문 → 방향 확인 → 초안 검토를 예시 응답으로 확인할 수 있는 미리보기입니다. 개발 모드에서만 열리며 운영 환경에서는 404입니다. 운영 AI API의 인증은 그대로 적용됩니다.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+원래 테마(흰색·연회색·최소한의 파란 강조색)를 유지한 반응형 화면입니다. 운영 키를 바꿀 때는 Vercel Production·Preview 환경 변수를 수정한 뒤 새로 배포해야 반영됩니다. 데이터베이스 마이그레이션은 이미 적용된 운영 프로젝트에서 다시 실행하지 마세요.

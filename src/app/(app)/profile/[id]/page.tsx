@@ -17,11 +17,12 @@ const AVATAR_BG: Record<string, string> = {
 };
 
 export default async function ProfilePage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const supabase = createSupabaseServerClient();
+  const params = await paramsPromise;
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

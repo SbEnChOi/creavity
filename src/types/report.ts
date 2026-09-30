@@ -2,6 +2,17 @@ export type Visibility = "private" | "custom" | "club" | "public";
 export type ReportStatus = "draft" | "published";
 
 export type ReportContent = {
+  execution?: {
+    audience?: string;
+    scenario?: string;
+    first_test?: string;
+    success_metric?: string;
+  };
+  ai_notes?: {
+    sources?: { title: string; url: string; kind: "web" | "video" | "image"; credit?: string }[];
+    suggestions?: string[];
+    open_questions?: string[];
+  };
   step1?: {
     kind?: "tech" | "idea" | string;       // 기술 | 아이디어
     name?: string;

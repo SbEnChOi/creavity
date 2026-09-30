@@ -4,7 +4,7 @@ import IdeasClient, { type IdeaAuthor, type IdeaRow } from "./ideas-client";
 export const dynamic = "force-dynamic";
 
 export default async function IdeasPage() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
