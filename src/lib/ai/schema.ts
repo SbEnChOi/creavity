@@ -69,7 +69,7 @@ export function nextTopic(answers: Answer[]): Topic | undefined {
 
 export function readAnswer(question: Question, choices: string[], custom: string): Answer {
   const unique = Array.from(new Set(choices));
-  if (!unique.length || (!question.multiple && unique.length > 1)) throw new Error("선택지를 확인해주세요.");
+  if (!unique.length) throw new Error("선택지를 확인해주세요.");
   const values = unique.map((id) => {
     if (id === "other") {
       if (!custom.trim()) throw new Error("기타 항목에 생각을 적어주세요.");

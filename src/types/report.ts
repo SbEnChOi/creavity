@@ -9,7 +9,7 @@ export type ReportContent = {
     success_metric?: string;
   };
   ai_notes?: {
-    sources?: { title: string; url: string; kind: "web" | "video" | "image"; credit?: string }[];
+    sources?: { title: string; url: string; kind: "web" | "video" | "image"; thumbnail?: string; credit?: string }[];
     suggestions?: string[];
     open_questions?: string[];
   };

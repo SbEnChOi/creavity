@@ -38,13 +38,29 @@ test("all directions and explicit confirmation are required before drafting; rev
   assert.equal(draftToReport(session.state), null);
 });
 
-test("other answers are recorded literally; empty, unknown or excess selections are rejected", () => {
+test("other answers are recorded literally; empty and unknown selections are rejected", () => {
   const q: Question = { topic: "goal", prompt: "목적?", reason: "", multiple: false, options: [{ id: "option1", label: "첫 선택", detail: "설명" }] };
   assert.equal(readAnswer(q, ["other"], "앱 만들기 말고 종이로 시작할래").value, "앱 만들기 말고 종이로 시작할래");
   assert.throws(() => readAnswer(q, ["other"], " "), /기타/);
   assert.throws(() => readAnswer(q, ["tampered"], ""), /없는 선택지/);
-  assert.throws(() => readAnswer(q, ["option1", "other"], "내용"), /확인/);
+  assert.equal(readAnswer(q, ["option1", "other", "option1"], "내용").value, "첫 선택 — 설명 / 내용");
   assert.throws(() => readAnswer(q, [], ""), /확인/);
+});
+
+test("every topic supports multiple selections and other text, including older single-choice questions", async () => {
+  const send = createDemoTransport();
+  let session = await send(start);
+  for (const topic of TOPICS) {
+    assert.equal(session.state.question?.multiple, true);
+    const oldQuestion = { ...session.state.question!, multiple: false };
+    const selected = readAnswer(oldQuestion, ["option1", "option2", "other"], `${topic}의 추가 조건`);
+    assert.ok(selected.value.includes(oldQuestion.options[0].label));
+    assert.ok(selected.value.includes(oldQuestion.options[1].label));
+    assert.ok(selected.value.includes(`${topic}의 추가 조건`));
+    session = await send({ action: "answer", id: session.id, revision: session.revision, choices: ["option1", "option2", "other"], custom: `${topic}의 추가 조건` });
+    assert.equal(session.state.answers.at(-1)?.value, selected.value);
+  }
+  assert.equal(session.state.phase, "confirm");
 });
 
 test("clarification does not turn an uncertain response into a confirmed direction; basic format stays compatible", async () => {

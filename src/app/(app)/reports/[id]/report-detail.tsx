@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import ReportAiNotes from "@/components/ai/ReportAiNotes";
+import ImagePreview from "@/components/ImagePreview";
+import FormattedText from "@/components/FormattedText";
+import { imageUrl } from "@/lib/images";
 import type { Report, ReportContent, Visibility } from "@/types/report";
 import type { CommentRow } from "./page";
 
@@ -128,13 +131,13 @@ export default function ReportDetail({
   };
 
   return (
-    <div className="px-5 md:px-10 py-10 max-w-3xl [overflow-wrap:anywhere] print:px-0 print:py-0 print:max-w-none">
+    <div className="report-detail px-5 md:px-10 py-10 max-w-4xl [overflow-wrap:anywhere] print:px-0 print:py-0 print:max-w-none">
       {/* 뒤로가기 */}
       <div className="flex items-center justify-between mb-8 print:hidden">
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm text-foreground/50 hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 text-base text-foreground/70 hover:text-foreground transition-colors"
         >
           <ArrowLeft size={15} strokeWidth={1.75} />
           뒤로
@@ -144,7 +147,7 @@ export default function ReportDetail({
             type="button"
             onClick={() => window.print()}
             title="PDF로 저장 또는 인쇄"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-sm hover:bg-surface transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-base hover:bg-surface transition-colors"
           >
             <Printer size={14} strokeWidth={1.75} />
             PDF · 인쇄
@@ -152,7 +155,7 @@ export default function ReportDetail({
           {isOwner && (
             <Link
               href={`/reports/${report.id}/edit`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-sm hover:bg-surface transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-base hover:bg-surface transition-colors"
             >
               <Edit2 size={14} strokeWidth={1.75} />
               수정
@@ -163,7 +166,7 @@ export default function ReportDetail({
 
       {/* 헤더 */}
       <header className="mb-10">
-        <div className="flex flex-wrap items-center gap-2 mb-3 text-xs text-foreground/50">
+        <div className="flex flex-wrap items-center gap-2 mb-3 text-sm text-foreground/70">
           {report.edition != null && (
             <span className="font-medium">{report.edition}차</span>
           )}
@@ -191,14 +194,14 @@ export default function ReportDetail({
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <AuthorAvatar profile={report.profiles} />
-            <div className="text-sm text-foreground/60">
+            <div className="text-base text-foreground/75">
               <span className="font-medium text-foreground hover:underline">
                 {report.profiles?.display_name ?? "알 수 없음"}
               </span>
               {report.profiles?.grade && <span className="ml-1">{report.profiles.grade}학년</span>}
             </div>
           </Link>
-          <span className="text-sm text-foreground/60">
+          <span className="text-base text-foreground/75">
             <span className="mx-1.5">·</span>
             {dateStr}
           </span>
@@ -255,7 +258,7 @@ export default function ReportDetail({
 
       {/* ─── 반응 ─── */}
       <div className="mt-12 pt-8 border-t border-border-default print:hidden">
-        <p className="text-xs font-medium text-foreground/50 mb-3">반응</p>
+        <p className="text-sm font-medium text-foreground/70 mb-3">반응</p>
         <div className="flex flex-wrap gap-2">
           {REACTIONS.map(({ type, emoji, label }) => {
             const active = mine.has(type);
@@ -265,7 +268,7 @@ export default function ReportDetail({
                 key={type}
                 type="button"
                 onClick={() => handleReaction(type)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-base border transition-colors ${
                   active
                     ? "bg-accent/10 border-accent/30 text-accent"
                     : "border-border-default hover:bg-surface text-foreground/70"
@@ -274,7 +277,7 @@ export default function ReportDetail({
                 <span>{emoji}</span>
                 <span>{label}</span>
                 {count > 0 && (
-                  <span className={`text-xs font-medium ${active ? "text-accent" : "text-foreground/50"}`}>
+                  <span className={`text-sm font-medium ${active ? "text-accent" : "text-foreground/70"}`}>
                     {count}
                   </span>
                 )}
@@ -286,7 +289,7 @@ export default function ReportDetail({
 
       {/* ─── 댓글 ─── */}
       <div className="mt-10 pb-16 print:hidden">
-        <p className="text-xs font-medium text-foreground/50 mb-4">
+        <p className="text-sm font-medium text-foreground/70 mb-4">
           댓글 {comments.length > 0 && <span>({comments.length})</span>}
         </p>
 
@@ -297,14 +300,14 @@ export default function ReportDetail({
                 <AuthorAvatar profile={cm.profiles} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 mb-0.5">
-                    <span className="text-sm font-medium text-foreground">
+                    <span className="text-base font-medium text-foreground">
                       {cm.profiles?.display_name ?? "알 수 없음"}
                     </span>
-                    <span className="text-xs text-foreground/40">
+                    <span className="text-sm text-foreground/70">
                       {formatCommentDate(cm.created_at)}
                     </span>
                   </div>
-                  <p className="text-sm text-foreground/80 whitespace-pre-wrap">{cm.body}</p>
+                  <p className="text-base text-foreground/80 whitespace-pre-wrap">{cm.body}</p>
                 </div>
               </li>
             ))}
@@ -318,13 +321,13 @@ export default function ReportDetail({
               value={commentBody}
               onChange={(e) => setCommentBody(e.target.value)}
               placeholder="댓글을 입력하세요..."
-              className="w-full px-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-white focus:border-foreground/20 transition-colors"
+              className="w-full px-3 py-2 text-base rounded-md bg-surface border border-border-default focus:outline-none focus:bg-white focus:border-foreground/20 transition-colors"
             />
           </div>
           <button
             type="submit"
             disabled={!commentBody.trim() || submitting}
-            className="px-4 py-2 rounded-md bg-foreground text-white text-sm font-medium hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 rounded-md bg-foreground text-white text-base font-medium hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             등록
           </button>
@@ -346,10 +349,10 @@ function ContentSection({
   return (
     <section className="mb-10">
       <div className="flex items-center gap-2 mb-5 pb-2 border-b border-border-default">
-        <span className="flex items-center justify-center w-5 h-5 rounded bg-foreground/10 text-foreground text-xs font-semibold">
+        <span className="flex items-center justify-center w-7 h-7 rounded-md bg-accent/10 text-accent text-sm font-semibold">
           {number}
         </span>
-        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+        <h2 className="text-xl font-semibold text-foreground">{label}</h2>
       </div>
       <div className="space-y-4">{children}</div>
     </section>
@@ -361,10 +364,10 @@ function Row({
 }: { label: string; value?: string | null; children?: React.ReactNode }) {
   if (!value && !children) return null;
   return (
-    <div className="text-sm">
-      <p className="text-xs font-medium text-foreground/40 mb-1">{label}</p>
-      <div className="px-3 py-2 rounded-md bg-surface text-foreground">
-        {children ?? value}
+    <div className="text-base">
+      <p className="text-sm font-medium text-foreground/75 mb-2">{label}</p>
+      <div className="px-4 py-3 rounded-lg bg-surface text-foreground leading-8">
+        {children ?? <FormattedText value={value ?? ""} />}
       </div>
     </div>
   );
@@ -373,27 +376,23 @@ function Row({
 function Prose({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
-    <div className="text-sm">
-      <p className="text-xs font-medium text-foreground/40 mb-1">{label}</p>
-      <div className="px-4 py-3 rounded-md bg-surface text-foreground/85 whitespace-pre-wrap leading-relaxed">
-        {value}
+    <div className="text-base">
+      <p className="text-sm font-medium text-foreground/75 mb-2">{label}</p>
+      <div className="px-4 py-3 rounded-md bg-surface text-foreground/85 whitespace-pre-wrap leading-8">
+        <FormattedText value={value} />
       </div>
     </div>
   );
 }
 
 function ImageGallery({ images }: { images?: string[] }) {
-  if (!images || images.length === 0) return null;
+  const urls = [...new Set((images ?? []).map(imageUrl).filter((url): url is string => !!url))];
+  if (!urls.length) return null;
   return (
-    <div className="text-sm">
-      <p className="text-xs font-medium text-foreground/40 mb-1">사진</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {images.map((url) => (
-          <a key={url} href={url} target="_blank" rel="noopener noreferrer" className="block aspect-video overflow-hidden rounded-md bg-surface border border-border-default">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="" className="w-full h-full object-cover hover:scale-105 transition-transform" />
-          </a>
-        ))}
+    <div className="text-base">
+      <p className="text-sm font-medium text-foreground/75 mb-2">사진</p>
+      <div className={`grid gap-3 ${urls.length === 1 ? "max-w-xl grid-cols-1" : "grid-cols-2 sm:grid-cols-3"}`}>
+        {urls.map((url, i) => <ImagePreview key={url} src={url} title={`첨부 사진 ${i + 1}`} contain />)}
       </div>
     </div>
   );
@@ -408,7 +407,7 @@ function AuthorAvatar({
 }) {
   const name = profile?.display_name ?? "?";
   const color = profile?.avatar_color ?? "gray";
-  const cls = size === "sm" ? "w-6 h-6 text-xs" : "w-8 h-8 text-sm";
+  const cls = size === "sm" ? "w-6 h-6 text-sm" : "w-8 h-8 text-base";
   return (
     <span className={`flex items-center justify-center rounded-full shrink-0 font-semibold ${cls} ${AVATAR_BG[color] ?? AVATAR_BG.gray}`}>
       {name.charAt(0)}

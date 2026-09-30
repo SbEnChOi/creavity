@@ -1,4 +1,5 @@
 import type { Draft } from "@/lib/ai/schema";
+import FormattedText from "../FormattedText";
 
 export default function DraftPreview({ draft }: { draft: Draft }) {
   const c = draft.content;
@@ -12,12 +13,12 @@ export default function DraftPreview({ draft }: { draft: Draft }) {
   return <div className="space-y-7">
     <h2 className="text-2xl font-semibold tracking-tight">{draft.title}</h2>
     {groups.map((g, i) => <section key={g.title}>
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><span className="flex h-5 w-5 items-center justify-center rounded bg-surface text-[11px]">{i + 1}</span>{g.title}</h3>
-      <dl className="space-y-3 border-l border-border-default pl-4">
-        {g.rows.map(([label, text]) => <div key={label}><dt className="mb-1 text-[11px] text-foreground/50">{label}</dt><dd className="whitespace-pre-wrap break-words text-sm leading-6">{text || "미정"}</dd></div>)}
+      <h3 className="mb-4 flex items-center gap-3 text-lg font-semibold"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent/10 text-sm text-accent">{i + 1}</span>{g.title}</h3>
+      <dl className="space-y-5 border-l border-border-default pl-4">
+        {g.rows.map(([label, text]) => <div key={label}><dt className="mb-2 text-sm font-medium text-foreground/75">{label}</dt><dd className="text-base leading-8"><FormattedText value={text || "미정"} /></dd></div>)}
       </dl>
     </section>)}
-    {draft.suggestions.length > 0 && <section className="rounded-xl bg-surface p-4"><h3 className="mb-2 text-xs font-semibold">따로 생각해볼 AI 제안</h3><ul className="list-disc space-y-2 pl-4 text-sm leading-6 text-foreground/70">{draft.suggestions.map((s, i) => <li key={i}>{s}</li>)}</ul></section>}
-    {draft.open_questions.length > 0 && <section className="rounded-xl border border-border-default p-4"><h3 className="mb-2 text-xs font-semibold">아직 확인할 내용</h3><ul className="list-disc space-y-2 pl-4 text-sm leading-6 text-foreground/70">{draft.open_questions.map((s, i) => <li key={i}>{s}</li>)}</ul></section>}
+    {draft.suggestions.length > 0 && <section className="rounded-xl bg-surface p-4"><h3 className="mb-2 text-sm font-semibold">따로 생각해볼 AI 제안</h3><ul className="list-disc space-y-2 pl-4 text-base leading-6 text-foreground/70">{draft.suggestions.map((s, i) => <li key={i}>{s}</li>)}</ul></section>}
+    {draft.open_questions.length > 0 && <section className="rounded-xl border border-border-default p-4"><h3 className="mb-2 text-sm font-semibold">아직 확인할 내용</h3><ul className="list-disc space-y-2 pl-4 text-base leading-6 text-foreground/70">{draft.open_questions.map((s, i) => <li key={i}>{s}</li>)}</ul></section>}
   </div>;
 }

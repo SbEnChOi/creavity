@@ -22,26 +22,31 @@ body {
   background: var(--background);
   font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 @layer components {
   .ai-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-xs font-medium text-white transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-foreground/80 disabled:cursor-not-allowed disabled:opacity-40;
   }
   .ai-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border-default bg-white px-3 py-2 text-xs text-foreground/70 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-border-default bg-white px-3 py-2.5 text-sm text-foreground/85 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40;
   }
   .ai-textarea {
-    @apply w-full resize-y rounded-xl border border-border-default bg-surface p-4 text-sm leading-7 placeholder:text-foreground/40 focus:border-foreground/30 focus:bg-white focus:outline-none;
+    @apply w-full resize-y rounded-xl border border-border-default bg-surface p-4 text-base leading-8 placeholder:text-foreground/50 focus:border-accent/50 focus:bg-white focus:outline-none;
   }
   .ai-option {
     @apply flex w-full items-start gap-3 rounded-xl border border-border-default bg-white p-4 text-left transition-colors hover:bg-surface disabled:opacity-50;
   }
   .ai-option-selected {
-    @apply border-foreground/40 bg-surface;
+    @apply border-accent/50 bg-accent/5;
   }
   .ai-option-number {
-    @apply mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border-default bg-white text-[11px] text-foreground/50;
+    @apply mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border-default bg-white text-sm font-medium text-foreground/75;
+  }
+  .ai-option-selected .ai-option-number {
+    @apply border-accent/30 bg-accent text-white;
   }
 }
 

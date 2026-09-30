@@ -169,15 +169,15 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
   ) => setContent((prev) => ({ ...prev, [key]: { ...(prev[key] ?? {}), ...patch } }));
 
   return (
-    <div className="px-5 md:px-10 py-10 max-w-3xl">
-      {initialAiDraft && <div className="mb-6 rounded-lg border border-border-default bg-surface p-4 text-xs leading-6 text-foreground/65">AI 구체화 초안입니다. 내용을 검토한 뒤 저장하거나 발행해주세요. <Link href={`/ai?session=${aiSessionId}`} className="text-accent hover:underline">대화로 돌아가기</Link></div>}
-      {!initialReport && !initialAiDraft && <Link href="/ai" className="mb-6 inline-block text-xs text-foreground/50 hover:text-accent">메모부터 시작하고 싶다면 → AI와 구체화하기</Link>}
-      <div className="mb-6 flex items-center justify-between text-xs text-foreground/50">
+    <div className="report-editor px-5 md:px-10 py-10 max-w-4xl">
+      {initialAiDraft && <div className="mb-6 rounded-lg border border-border-default bg-surface p-4 text-sm leading-6 text-foreground/65">AI 구체화 초안입니다. 내용을 검토한 뒤 저장하거나 발행해주세요. <Link href={`/ai?session=${aiSessionId}`} className="text-accent hover:underline">대화로 돌아가기</Link></div>}
+      {!initialReport && !initialAiDraft && <Link href="/ai" className="mb-6 inline-block text-sm text-foreground/70 hover:text-accent">메모부터 시작하고 싶다면 → AI와 구체화하기</Link>}
+      <div className="mb-6 flex items-center justify-between text-sm text-foreground/70">
         <SaveIndicator state={saveState} savedAt={savedAt} />
       </div>
 
       {saveError && (
-        <div className="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 font-mono break-all">
+        <div className="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 font-mono break-all">
           <span className="font-semibold">저장 오류: </span>{saveError}
         </div>
       )}
@@ -189,9 +189,9 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
           value={edition}
           onChange={(e) => setEdition(e.target.value === "" ? "" : Number(e.target.value))}
           placeholder="차수"
-          className="w-20 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30 py-1"
+          className="w-20 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/50 py-1"
         />
-        <span className="text-xs text-foreground/40">차수 (선택)</span>
+        <span className="text-sm text-foreground/70">차수 (선택)</span>
       </div>
 
       <input
@@ -240,7 +240,7 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
               onChange={(imgs) => updateStep("step1", { images: imgs })}
             />
           ) : (
-            <div className="text-xs text-foreground/40 px-3 py-2">로그인 정보를 불러오는 중...</div>
+            <div className="text-sm text-foreground/70 px-3 py-2">로그인 정보를 불러오는 중...</div>
           )}
         </Field>
         <Field label="설명">
@@ -315,7 +315,7 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
           type="button"
           onClick={handlePublish}
           disabled={(!title.trim() && !hasContent(content)) || publishing}
-          className="px-4 py-2 rounded-md bg-accent text-white text-sm font-medium hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-md bg-accent text-white text-base font-medium hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {publishing ? (
             <span className="flex items-center gap-1.5"><Loader2 size={14} className="animate-spin" />발행 중...</span>
@@ -361,7 +361,7 @@ function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: str
           const active = presetValues.includes(opt);
           return (
             <button key={opt} type="button" onClick={() => togglePreset(opt)}
-              className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
+              className={`px-2.5 py-1 rounded-full text-sm transition-colors ${
                 active ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
               }`}>
               {opt}
@@ -375,7 +375,7 @@ function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: str
           {customValues.map((v) => (
             <button key={v} type="button" onClick={() => removeCustom(v)}
               title="클릭해서 제거"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-foreground text-white hover:bg-foreground/85"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-foreground text-white hover:bg-foreground/85"
             >
               {v} <span className="opacity-60">×</span>
             </button>
@@ -392,13 +392,13 @@ function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: str
             if (e.key === "Enter") { e.preventDefault(); addCustom(); }
           }}
           placeholder="기타 직접 입력 후 Enter 또는 추가"
-          className="flex-1 px-0 py-1.5 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30"
+          className="flex-1 px-0 py-1.5 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/50"
         />
         <button
           type="button"
           onClick={addCustom}
           disabled={!customInput.trim()}
-          className="text-xs text-foreground/60 hover:text-foreground disabled:opacity-30"
+          className="text-sm text-foreground/75 hover:text-foreground disabled:opacity-30"
         >
           + 추가
         </button>
@@ -414,19 +414,19 @@ function SaveIndicator({ state, savedAt }: { state: SaveState; savedAt: Date | n
   if (state === "saved") return (
     <span className="flex items-center gap-1.5">
       <Check size={12} />저장됨
-      {savedAt && <span className="text-foreground/30">· {savedAt.getHours().toString().padStart(2,"0")}:{savedAt.getMinutes().toString().padStart(2,"0")}</span>}
+      {savedAt && <span className="text-foreground/60">· {savedAt.getHours().toString().padStart(2,"0")}:{savedAt.getMinutes().toString().padStart(2,"0")}</span>}
     </span>
   );
   if (state === "error") return <span className="text-red-500">저장 실패</span>;
-  return <span className="text-foreground/30">자동저장</span>;
+  return <span className="text-foreground/60">자동저장</span>;
 }
 
 function Section({ number, label, children }: { number: number; label: string; children: React.ReactNode }) {
   return (
     <section className="mb-10">
       <div className="flex items-center gap-2 mb-4 pb-2 border-b border-border-default">
-        <span className="flex items-center justify-center w-5 h-5 rounded bg-foreground/10 text-foreground text-xs font-semibold">{number}</span>
-        <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+        <span className="flex items-center justify-center w-7 h-7 rounded-md bg-accent/10 text-accent text-sm font-semibold">{number}</span>
+        <h2 className="text-xl font-semibold text-foreground">{label}</h2>
       </div>
       <div className="space-y-5">{children}</div>
     </section>
@@ -436,7 +436,7 @@ function Section({ number, label, children }: { number: number; label: string; c
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-foreground/60 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-foreground/75 mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -445,14 +445,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Input({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full px-0 py-1.5 text-sm bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/30" />
+      className="w-full px-0 py-1.5 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/50" />
   );
 }
 
 function Textarea({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3}
-      className="w-full px-3 py-2 text-sm bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/30 resize-none transition-colors" />
+      className="w-full min-h-36 px-4 py-3 text-base leading-8 bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/50 resize-y transition-colors" />
   );
 }
 
@@ -466,7 +466,7 @@ function Segmented({ value, options, onChange }: { value: string; options: SegOp
         const label = typeof opt === "string" ? opt : opt.label;
         return (
           <button key={v} type="button" onClick={() => onChange(value === v ? "" : v)}
-            className={`px-2.5 py-1 text-xs rounded transition-colors ${value === v ? "bg-white text-foreground font-medium" : "text-foreground/60 hover:text-foreground"}`}>
+            className={`px-2.5 py-1 text-sm rounded transition-colors ${value === v ? "bg-white text-foreground font-medium" : "text-foreground/75 hover:text-foreground"}`}>
             {label}
           </button>
         );
@@ -478,13 +478,13 @@ function Segmented({ value, options, onChange }: { value: string; options: SegOp
 function VisibilityChips({ value, onChange }: { value: Visibility; onChange: (v: Visibility) => void }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-foreground/40 mr-1">공개 범위</span>
+      <span className="text-sm text-foreground/70 mr-1">공개 범위</span>
       {visibilityOptions.map(({ value: v, label, Icon }) => (
         <button
           key={v}
           type="button"
           onClick={() => onChange(v)}
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-colors ${
             value === v
               ? "bg-foreground text-white"
               : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
