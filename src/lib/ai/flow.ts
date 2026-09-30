@@ -1,5 +1,5 @@
 import { AiError } from "./errors";
-import { nextTopic, readAnswer, type AiRequest, type Answer, type Draft, type Question, type Research, type SessionState, type Topic } from "./schema";
+import { dialogueMode, nextTopic, readAnswer, type AiRequest, type Answer, type Draft, type Question, type Research, type SessionState, type Topic } from "./schema";
 
 export type FlowDependencies = {
   askQuestion: (state: SessionState, topic: Topic) => Promise<Question>;
@@ -11,7 +11,8 @@ export type FlowDependencies = {
 
 export async function transition(current: SessionState | null, request: AiRequest, deps: FlowDependencies): Promise<SessionState> {
   if (request.action === "start") {
-    const state: SessionState = { seed: request.seed, format: request.format, useResearch: request.useResearch,
+    const mode = request.mode ?? "explore";
+    const state: SessionState = { seed: request.seed, mode, format: mode === "explore" ? "basic" : request.format, useResearch: request.useResearch,
       phase: "questions", answers: [], question: null, clarification: "", research: null, draft: null, confirmed: false };
     state.question = await deps.askQuestion(state, "goal");
     return state;
@@ -19,6 +20,15 @@ export async function transition(current: SessionState | null, request: AiReques
   if (!current) throw new AiError("대화를 찾을 수 없습니다.", 404);
   const state = structuredClone(current);
   switch (request.action) {
+    case "fork_focus": {
+      if (dialogueMode(state) !== "explore" || state.phase !== "review" || !state.confirmed || !state.draft || state.pendingRefinement) throw new AiError("먼저 확장 탐색 기록을 확인해주세요.", 400);
+      const focused: SessionState = { seed: state.seed, mode: "focus", format: "extended", useResearch: state.useResearch,
+        sourceSessionId: request.id, focusDirection: request.direction,
+        explorationContext: { possibilities: state.draft.content.step3.application, suggestions: state.draft.suggestions },
+        phase: "questions", answers: [], question: null, clarification: "", research: null, draft: null, confirmed: false };
+      focused.question = await deps.askQuestion(focused, "goal");
+      return focused;
+    }
     case "answer": {
       if (state.phase !== "questions" || !state.question) throw new AiError("현재 질문에 답해주세요.", 400);
       let answer;

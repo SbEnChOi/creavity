@@ -2,11 +2,19 @@ import { z } from "zod";
 
 export const TOPICS = ["goal", "audience", "problem", "solution", "constraints", "success"] as const;
 export type Topic = (typeof TOPICS)[number];
+export type DialogueMode = "explore" | "focus";
+export const MODE_LABELS: Record<DialogueMode, string> = { explore: "확장 탐색", focus: "실행 구체화" };
 export const REFINEMENT_PRESETS = ["문장을 더 간결하게 첨삭해줘", "장점과 한계를 객관적으로 평가해줘", "원래 방향 안에서 추가 아이디어를 제안해줘"] as const;
 export const TOPIC_LABELS: Record<Topic, string> = {
   goal: "목적", audience: "대상과 상황", problem: "해결할 문제",
   solution: "해결 방식", constraints: "범위와 제약", success: "성공 기준",
 };
+export const EXPLORE_TOPIC_LABELS: Record<Topic, string> = {
+  goal: "아이디어의 씨앗", audience: "다양한 활용 장면", problem: "새롭게 풀 문제",
+  solution: "파생 기능", constraints: "연결과 변형", success: "나중에 발전시킬 힌트",
+};
+export function dialogueMode(state: { mode?: DialogueMode }): DialogueMode { return state.mode ?? "focus"; }
+export function topicLabels(mode: DialogueMode) { return mode === "explore" ? EXPLORE_TOPIC_LABELS : TOPIC_LABELS; }
 
 export const questionSchema = z.object({
   prompt: z.string(), reason: z.string(),
@@ -40,6 +48,10 @@ export type Resource = { title: string; url: string; kind: "web" | "video" | "im
 export type Research = { text: string; citations: Citation[]; resources: Resource[]; warning?: string; videoSearchUrl?: string };
 export type SessionState = {
   seed: string; format: "basic" | "extended"; useResearch: boolean;
+  mode?: DialogueMode;
+  sourceSessionId?: string;
+  focusDirection?: string;
+  explorationContext?: { possibilities: string; suggestions: string[] };
   phase: "questions" | "confirm" | "review";
   answers: Answer[]; question: Question | null; clarification: string;
   research: Research | null; draft: Draft | null; confirmed: boolean;
@@ -51,7 +63,8 @@ export type SessionState = {
 export type Session = { id: string; revision: number; state: SessionState; updated_at: string };
 
 export const requestSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("start"), seed: z.string().trim().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean() }),
+  z.object({ action: z.literal("start"), seed: z.string().trim().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional() }),
+  z.object({ action: z.literal("fork_focus"), id: z.string().uuid(), revision: z.number().int().nonnegative(), direction: z.string().trim().min(3).max(2000) }),
   z.object({ action: z.literal("answer"), id: z.string().uuid(), revision: z.number().int().nonnegative(), choices: z.array(z.string().max(80)).max(6), custom: z.string().trim().max(2000).default("") }),
   z.object({ action: z.literal("clarify"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
   z.object({ action: z.literal("back"), id: z.string().uuid(), revision: z.number().int().nonnegative(), topic: z.enum(TOPICS) }),

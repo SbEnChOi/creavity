@@ -43,13 +43,14 @@ export async function POST(req: Request) {
     if (quotaError) throw new AiError("AI 저장소 연결을 확인해주세요. Supabase AI 마이그레이션이 필요합니다.");
     if (!allowed) throw new AiError("시간당 40회 이용 한도에 도달했습니다. 다음 시간에 다시 이용해주세요.", 429);
     const state = await transition(current, input);
-    const result = input.action === "start"
+    const result = input.action === "start" || input.action === "fork_focus"
       ? await supabase.from("ai_sessions").insert({ user_id: user.id, state }).select(projection).single()
       : await supabase.from("ai_sessions").update({ state, revision: input.revision + 1, updated_at: new Date().toISOString(), processing_until: null })
         .eq("id", input.id).eq("user_id", user.id).eq("revision", input.revision).select(projection).maybeSingle();
     if (result.error) throw new AiError("대화를 저장하지 못했습니다. 다시 시도해주세요.");
     if (!result.data) throw new AiError("대화가 변경되었습니다. 다시 열어주세요.", 409);
-    locked = false;
+    // Forks create a new session; finally releases the original session's lock.
+    if (input.action !== "fork_focus") locked = false;
     return NextResponse.json({ session: result.data }, { headers: { "Cache-Control": "no-store" } });
   } catch (e) {
     return fail(e instanceof AiError ? e.message : "처리 중 문제가 생겼습니다. 다시 시도해주세요.", e instanceof AiError ? e.status : 500);

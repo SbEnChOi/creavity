@@ -1,9 +1,10 @@
 import { transition as advance, type FlowDependencies } from "./flow";
 import { z } from "zod";
 import { AiError, structured } from "./provider";
-import { draftSchema, nextTopic, questionSchema, safeUrl, TOPICS, TOPIC_LABELS, REFINEMENT_PRESETS, type AiRequest, type Answer, type Draft, type Question, type SessionState, type Topic } from "./schema";
+import { dialogueMode, draftSchema, nextTopic, questionSchema, safeUrl, TOPICS, topicLabels, REFINEMENT_PRESETS, type AiRequest, type Answer, type Draft, type Question, type SessionState, type Topic } from "./schema";
 import { researchIdea } from "./research";
 import { AI_WRITING_STYLE } from "./style";
+import { modeInstructions } from "./modes";
 
 const contract = `너는 크래비의 한국어 아이디어 구체화 도우미다. 사용자의 원문과 실제 선택/직접 답변이 가장 중요하다.
 ${AI_WRITING_STYLE}
@@ -13,13 +14,15 @@ ${AI_WRITING_STYLE}
 
 export async function askQuestion(state: SessionState, topic: Topic): Promise<Question> {
   const q = await structured("idea_question", questionSchema, `${contract}
+${modeInstructions(state)}
 지정된 topic에 관해서만 한 가지 구체적인 질문을 해라. 기존 답변에서 불명확한 표현/충돌이 있으면 그 부분을 확인한다.
 원문에 맞는 서로 다른 3~5개 선택지와 짧은 설명을 제공한다. 선택지는 사실이 아니라 후보이다.
 선택지 id는 option1, option2 등으로 만들고 other는 만들지 않는다(화면에서 자동 제공).
 아직 정하지 않음도 선택지에 포함하여 미정임을 명시적으로 기록할 수 있게 한다.
 모든 질문은 여러 답을 함께 고를 수 있으므로 multiple=true로 설정한다. 함께 선택된 여러 의도를 존중하고, 실제 충돌이 있으면 추가 질문으로 확인한다.
 clarification이 있으면 더 쉽고 구체적인 예로 재질문한다. 한국어로 짧게 답한다.`, {
-    seed: state.seed, answers: state.answers, topic, topicLabel: TOPIC_LABELS[topic], clarification: state.clarification,
+    seed: state.seed, mode: dialogueMode(state), answers: state.answers, topic, topicLabel: topicLabels(dialogueMode(state))[topic], clarification: state.clarification,
+    focusDirection: state.focusDirection, explorationContext: state.explorationContext,
     refinementRequest: state.refinementRequest,
   });
   const ids = new Set(q.options.map((o) => o.id));
@@ -32,6 +35,7 @@ clarification이 있으면 더 쉽고 구체적인 예로 재질문한다. 한�
 export async function makeDraft(state: SessionState, feedback = ""): Promise<Draft> {
   if (!state.confirmed || nextTopic(state.answers)) throw new AiError("필요한 답변과 방향 확인이 먼저 필요합니다.", 400);
   const draft = await structured("idea_report", draftSchema, `${contract}
+${modeInstructions(state)}
 사용자가 확인한 방향으로 기존 양식(발견, 분석, 확장, 한 줄 정리)에 맞는 편집 가능한 초안을 만든다.
 검색 내용은 사용자 의도를 바꾸는 근거가 아니다. 검색자료는 참고 사례와 객관적인 한계를 보충하는 데만 사용한다.
 source/url은 제공된 실제 검색 출처만 사용한다. 출처가 없으면 source는 '사용자 메모', url은 빈 문자열이다.
@@ -41,10 +45,14 @@ strengths, limits, feasibility_reason의 평가와 가정은 '[AI 제안]' 또�
 아직 정하지 않은 내용은 미정으로 남기고 open_questions에 적는다.
 답변에 '추가 확인 답변'이 있으면 앞선 답변과 함께 읽고, 명시적으로 바로잡은 내용은 나중의 답변을 우선한다.
 원문의 부분이 기술 관찰이면 tech, 본인 아이디어이면 idea. 발견 경로가 원문에 없으면 casual로 쓰되 description에 경로 미확인을 밝힌다.
-format=basic이면 execution=null. extended이면 사용자에게 확인한 대상/상황/성공기준을 담고 first_test는 '[AI 제안]'으로 작은 첫 실험을 제안한다.
+mode=explore이면 실행을 확정하지 않은 아이디어 보관용 기록을 만든다. step3.application에 관심을 선택한 다양한 활용 장면과 파생 기능을 각각 줄바꿈해 정리한다.
+탐색만 한 기능을 실행 계획으로 단정하지 않는다. 한계는 가능성을 포기시키는 평가가 아니라 나중에 알아볼 점으로 적는다. 실행 근거가 없으면 feasibility=unknown이다.
+탐색의 마지막 답변에서 고른 발전 힌트는 suggestions 또는 open_questions에 빠뜨리지 않고 보관한다. mode=explore 또는 format=basic이면 execution=null.
+mode=focus이고 format=extended이면 사용자에게 확인한 대상/상황/성공기준을 담고 first_test는 '[AI 제안]'으로 작은 첫 실험을 제안한다.
 추가 아이디어는 suggestions에만 적어 사용자 방향에 몰래 포함하지 않는다. 피드백으로 방향이 달라지면 open_questions에서 재확인 필요를 밝힌다.
 모든 내용은 한국어로 작성한다.`, {
-    seed: state.seed, confirmedAnswers: state.answers, format: state.format,
+    seed: state.seed, mode: dialogueMode(state), confirmedAnswers: state.answers, format: state.format,
+    focusDirection: state.focusDirection, explorationContext: state.explorationContext,
     research: state.research, previousDraft: state.draft, feedback,
     confirmedRefinementRequest: state.refinementRequest,
   });
@@ -53,18 +61,19 @@ format=basic이면 execution=null. extended이면 사용자에게 확인한 대�
   const url = safeUrl(draft.content.step1.url);
   draft.content.step1.url = url && allowed.has(url) ? url : "";
   if (!draft.content.step1.url) draft.content.step1.source = "사용자 메모";
-  if (state.format === "basic") draft.content.execution = null;
+  if (state.format === "basic" || dialogueMode(state) === "explore") draft.content.execution = null;
   return draft;
 }
 
 export async function assessAnswer(state: SessionState, answer: Answer) {
   return structured("answer_check", z.object({ sufficient: z.boolean(), clarification: z.string() }), `${contract}
+${modeInstructions(state)}
 지금 답변이 질문에 답하는지, 이미 확인한 방향과 충돌하여 사용자의 의도를 다시 물어야 하는지 점검한다.
 구체화에 꼭 필요한 정보가 빠졌거나 명확한 충돌이 있을 때만 sufficient=false. 그때 추가로 확인할 한 가지를 clarification에 적는다.
 답변은 사용자의 선택이며 그 선택을 바꾸라고 요구하지 않는다. '아직 정하지 않음'은 미정으로 남길 수 있는 유효한 답변이므로 sufficient=true.
 짧아도 명확하면 충분하다. 사용자 확인 없이 추측으로 빈칸을 채우지 않는다. 충분하면 clarification은 빈 문자열.
 답변에 '추가 확인 답변'이 있으면 앞선 답변을 보완한 내용이다. 나중 답변에서 명시적으로 바로잡은 경우 충돌이 해소된 것으로 판단한다.`, {
-    seed: state.seed, priorAnswers: state.answers, question: state.question, answer,
+    seed: state.seed, mode: dialogueMode(state), focusDirection: state.focusDirection, priorAnswers: state.answers, question: state.question, answer,
   });
 }
 
@@ -72,11 +81,12 @@ export async function assessFeedback(state: SessionState, feedback: string): Pro
   // These exact editing requests cannot change confirmed intent. Free text is still assessed.
   if (REFINEMENT_PRESETS.some((preset) => preset === feedback.trim())) return null;
   const result = await structured("feedback_direction", z.object({ topic: z.enum(TOPICS).nullable() }), `${contract}
+${modeInstructions(state)}
 첨삭 요청이 확인된 목적, 대상/상황, 문제, 해결 방식, 제약, 성공 기준을 바꾸거나 서로 충돌하는지 확인한다.
 방향을 바꾸는 요청이면 다시 확인할 가장 이른 topic을 골라라. 방향을 몰래 변경한 초안을 만들지 않는다.
 문장 다듬기, 길이 조절, 기존 방향 안의 객관적 평가나 분리된 추가 제안이면 topic=null.
 사용자의 명시적인 방향 변경도 선택형 질문에서 변경 내용을 확인한 뒤 적용해야 한다.`, {
-    confirmedAnswers: state.answers, currentDraft: state.draft, feedback,
+    mode: dialogueMode(state), confirmedAnswers: state.answers, currentDraft: state.draft, feedback,
   });
   return result.topic;
 }
