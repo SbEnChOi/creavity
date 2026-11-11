@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import ReportDetail from "./report-detail";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +11,7 @@ export default async function ReportPage({
 }) {
   const params = await paramsPromise;
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   // 보고서 먼저 단독으로 조회 (profiles JOIN 제외 → RLS 간섭 방지)
   const { data: report, error: reportError } = await supabase

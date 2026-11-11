@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import { dialogueMode, MODE_LABELS, type Session } from "@/lib/ai/schema";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export default async function IdeaArchive({ searchParams }: { searchParams: Prom
   const q = (params.q ?? "").trim().slice(0, 200);
   const page = /^\d+$/.test(params.page ?? "") ? Math.max(1, Math.min(100000, Number(params.page))) : 1;
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user || user.is_anonymous) redirect("/ai");
   let query = supabase.from("ai_sessions").select("id, revision, state, updated_at", { count: "exact" }).eq("user_id", user.id);
   if (q) query = query.ilike("state->>seed", `%${q.replace(/[\\%_]/g, "\\$&")}%`);

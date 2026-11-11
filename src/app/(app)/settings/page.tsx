@@ -1,13 +1,11 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import SettingsClient from "./settings-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   const [{ data: me }, { data: members }, { data: mentors }] = await Promise.all([
     supabase

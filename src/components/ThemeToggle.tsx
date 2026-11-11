@@ -3,7 +3,6 @@
 import { Moon, Sun } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import "@/components/Tooltip.css";
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { APPEARANCE_KEY, preferenceFor, readAppearance, resolveAppearance, saveAppearance, type Appearance } from "@/lib/appearance";
 
@@ -11,25 +10,24 @@ type Props = { className?: string };
 
 export default function ThemeToggle({ className = "" }: Props) {
   const [appearance, setAppearance] = useState<Appearance>("light");
-  const pathname = usePathname();
 
   useEffect(() => {
     let current: Appearance;
-    try { current = readAppearance(window.localStorage, pathname); }
-    catch { current = resolveAppearance(null, pathname); }
+    try { current = readAppearance(window.localStorage); }
+    catch { current = resolveAppearance(null); }
     setAppearance(current);
     document.documentElement.dataset.theme = current;
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     const sync = (event: StorageEvent) => {
       if (event.key === APPEARANCE_KEY || event.key === null) {
         try {
-          const next = readAppearance(window.localStorage, pathname);
+          const next = readAppearance(window.localStorage);
           setAppearance(next);
           document.documentElement.dataset.theme = next;
         } catch {
-          const next = resolveAppearance(null, pathname);
+          const next = resolveAppearance(null);
           setAppearance(next);
           document.documentElement.dataset.theme = next;
         }
@@ -37,7 +35,7 @@ export default function ThemeToggle({ className = "" }: Props) {
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
-  }, [pathname]);
+  }, []);
 
   function toggle() {
     const next = preferenceFor(appearance);

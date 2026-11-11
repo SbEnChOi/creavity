@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import ReportEditor from "@/app/(app)/new/report-editor";
 import type { Report } from "@/types/report";
 
@@ -12,9 +12,7 @@ export default async function EditReportPage({
 }) {
   const params = await paramsPromise;
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   const { data: report } = await supabase
     .from("reports")

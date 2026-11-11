@@ -63,10 +63,10 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   return (
     <aside className={`w-16 md:w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden${isRedesignedRoute(pathname) ? " creavy-v2-sidebar" : ""}`}>
       <div className="px-3 md:px-5 pt-6 pb-4">
-        <Tooltip label="Creavy 홈" side="right" mobileOnly><Link href="/dashboard" aria-label="Creavy 홈" className="flex w-8 items-center justify-center md:hidden">
+        <Tooltip label="Creavy 홈" side="right" mobileOnly><Link href="/ai" aria-label="Creavy 홈" className="flex w-8 items-center justify-center md:hidden">
           <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-inverse text-sm font-bold">C</span>
         </Link></Tooltip>
-        <Wordmark href="/dashboard" className="hidden md:inline-flex" />
+        <Wordmark href="/ai" className="hidden md:inline-flex" />
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">

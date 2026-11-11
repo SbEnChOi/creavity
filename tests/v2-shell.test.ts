@@ -4,12 +4,9 @@ import { runInNewContext } from "node:vm";
 import { readFile } from "node:fs/promises";
 import { appearanceBootstrapScript, isRedesignedRoute, readAppearance, resolveAppearance } from "../src/lib/appearance";
 
-test("only the redesigned screens default to dark without a saved choice", () => {
-  for (const path of ["/ai", "/ai/archive", "/ideas", "/about", "/settings", "/ai-preview", "/login", "/ai-share/abc"]) {
-    assert.equal(resolveAppearance(null, path), "dark", path);
-  }
-  for (const path of ["/dashboard", "/new", "/reports/abc", "/feed", "/profile/abc", "/admin/ai", "/other", "/ai-other"]) {
-    assert.equal(resolveAppearance(null, path), "light", path);
+test("every route starts light until the reader chooses a theme", () => {
+  for (const path of ["/ai", "/ai/archive", "/ideas", "/about", "/settings", "/ai-preview", "/login", "/ai-share/abc", "/dashboard", "/new", "/reports/abc", "/feed", "/profile/abc", "/admin/ai", "/other", "/ai-other"]) {
+    assert.equal(resolveAppearance(null), "light", path);
   }
 });
 
@@ -20,14 +17,14 @@ test("initial paint and route reads use the same stored choice and fallback", ()
       const dataset: { theme?: string } = {};
       const localStorage = { getItem: () => saved };
       runInNewContext(appearanceBootstrapScript, { document: { documentElement: { dataset } }, window: { location: { pathname } }, localStorage });
-      assert.equal(dataset.theme, resolveAppearance(saved, pathname), `${pathname}: ${saved}`);
-      assert.equal(readAppearance(localStorage, pathname), dataset.theme);
+      assert.equal(dataset.theme, resolveAppearance(saved), `${pathname}: ${saved}`);
+      assert.equal(readAppearance(localStorage), dataset.theme);
     }
     const dataset: { theme?: string } = {};
     const blocked = { getItem: () => { throw new Error("blocked"); } };
     runInNewContext(appearanceBootstrapScript, { document: { documentElement: { dataset } }, window: { location: { pathname } }, localStorage: blocked });
-    assert.equal(dataset.theme, resolveAppearance(null, pathname), `${pathname}: blocked storage`);
-    assert.equal(readAppearance(blocked, pathname), dataset.theme);
+    assert.equal(dataset.theme, resolveAppearance(null), `${pathname}: blocked storage`);
+    assert.equal(readAppearance(blocked), dataset.theme);
   }
 });
 

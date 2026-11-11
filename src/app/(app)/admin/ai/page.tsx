@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import { MODE_LABELS, sessionSchema } from "@/lib/ai/schema";
 import AdminAIEditor from "./session-editor";
 import type { ConversationEntry } from "@/lib/ai/messages";
@@ -11,7 +11,7 @@ type Row = { id: string; user_id: string; updated_at: string; seed: string; mode
 export default async function AdminAI({ searchParams }: { searchParams: Promise<{ q?: string; owner?: string; page?: string; session?: string }> }) {
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user || user.is_anonymous) redirect("/login");
   const { data: me } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
   if (!me?.is_admin) redirect("/dashboard");

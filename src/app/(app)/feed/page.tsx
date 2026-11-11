@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import type { Report } from "@/types/report";
 import FeedClient, { type FeedAuthor } from "./feed-client";
 
@@ -6,13 +6,11 @@ export const dynamic = "force-dynamic";
 
 export default async function FeedPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   // 발행된 보고서 + 작성자 정보 + 내 공유 파트너/나를 연결한 사용자 관계 + 반응수 동시 조회
   const [
-    { data: reports },
+    { data: reports, error: reportsError },
     { data: profiles },
     { data: myMentors },
     { data: myMentees },
@@ -20,7 +18,7 @@ export default async function FeedPage() {
   ] = await Promise.all([
     supabase
       .from("reports")
-      .select("*")
+      .select("*, reactions(count)")
       .eq("status", "published")
       .order("published_at", { ascending: false })
       .limit(200),
@@ -36,21 +34,22 @@ export default async function FeedPage() {
     supabase.from("report_card_preferences").select("report_id,color").eq("user_id",user!.id),
   ]);
 
-  const list = (reports ?? []) as Report[];
-
-  // 반응 수 집계
-  const reportIds = list.map((r) => r.id);
-  const { data: reactions } = reportIds.length
-    ? await supabase
-        .from("reactions")
-        .select("report_id")
-        .in("report_id", reportIds)
-    : { data: [] };
-
+  const rows = (reports ?? []) as (Report & { reactions?: { count: number }[] })[];
   const reactionMap: Record<string, number> = {};
-  (reactions ?? []).forEach((r) => {
-    reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1;
+  const list = rows.map((row) => {
+    const { reactions, ...report } = row;
+    reactionMap[row.id] = reactions?.[0]?.count ?? 0;
+    return report as Report;
   });
+
+  if (reportsError) {
+    const ids = list.map((r) => r.id);
+    const { data: plain } = ids.length
+      ? await supabase.from("reactions").select("report_id").in("report_id", ids)
+      : { data: [] as { report_id: string }[] };
+    for (const id of ids) reactionMap[id] = 0;
+    (plain ?? []).forEach((r) => { reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1; });
+  }
 
   const authorMap: Record<string, FeedAuthor> = Object.fromEntries(
     (profiles ?? []).map((p) => [p.id, p as FeedAuthor])

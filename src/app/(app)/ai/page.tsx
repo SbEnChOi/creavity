@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import { z } from "zod";
 import IdeaStudio from "@/components/ai/IdeaStudio";
 import type { Session } from "@/lib/ai/schema";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AiPage({ searchParams: query }: { searchParams: Promise<{ session?: string; idea?: string; new?: string }> }) {
   const searchParams = await query;
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getServerUser();
   if (!user) return null;
   if (user.is_anonymous) return <IdeaStudio storageScope={user.id} configured={false} setupError="AI 구체화와 메모 보관은 회원 계정으로 이용할 수 있어요. 회원가입 또는 회원 로그인을 해주세요." />;
   const { data, error } = await supabase.from("ai_sessions").select("id, user_id, revision, state, updated_at, processing_until").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(10);

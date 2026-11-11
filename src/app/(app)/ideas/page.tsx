@@ -1,19 +1,18 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import IdeasClient, { type IdeaAuthor, type IdeaRow } from "./ideas-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function IdeasPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: ideas } = await supabase
-    .from("ideas")
-    .select("id, author_id, title, body, visibility, created_at")
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [user, { data: ideas }] = await Promise.all([
+    getServerUser(),
+    supabase
+      .from("ideas")
+      .select("id, author_id, title, body, visibility, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200),
+  ]);
 
   const list = (ideas ?? []) as IdeaRow[];
   const authorIds = Array.from(new Set(list.map((i) => i.author_id)));

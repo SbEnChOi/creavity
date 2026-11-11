@@ -21,7 +21,7 @@
 .v2-recent { min-width: 0; }
 
 .v2-home-intro {
-  padding: clamp(24px, 6vh, 52px) 0 22px;
+  padding: clamp(4px, 1.4vh, 14px) 0 22px;
   text-align: center;
 }
 
@@ -29,12 +29,13 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  width: 34px;
-  height: 34px;
-  margin-bottom: 8px;
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--accent);
+  width: 38px;
+  height: 38px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--mark) 18%, transparent);
+  color: var(--foreground);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--mark) 10%, transparent);
 }
 
 .v2-home-intro .v2-home-wordmark {
@@ -42,22 +43,23 @@
   display: flex;
   justify-content: center;
   width: max-content;
-  margin: 0 auto 20px;
-  padding: 0 .12em .15em;
-  font-size: clamp(46px, 5.2vw, 58px);
-  line-height: 1.05;
+  margin: 0 auto 16px;
+  padding: 0 .12em .16em;
+  font-size: clamp(58px, 7.4vw, 84px);
+  line-height: 1.02;
 }
 
-.v2-home-intro .v2-home-wordmark i { background: #EAFF36; }
+.v2-home-intro .v2-home-wordmark i { background: var(--mark); }
 
 .v2-home-wordmark::after {
   position: absolute;
   right: 0;
-  bottom: 0;
+  bottom: 1px;
   left: 0;
-  height: 1px;
-  border-radius: 50%;
-  background: var(--border);
+  height: 2px;
+  border-radius: 999px;
+  background: var(--mark);
+  opacity: .85;
   content: "";
 }
 
@@ -73,13 +75,13 @@
 
 .v2-composer {
   padding: 18px 18px 16px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--panel);
+  border: 2px solid var(--border-strong);
+  border-radius: 18px;
+  background: var(--surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / .04);
 }
 
-.v2-composer:focus-within { border-color: var(--foreground); }
+.v2-composer:focus-within { border-color: var(--foreground); background: var(--panel); }
 
 .v2-composer > label[for="idea-seed"] { margin-bottom: 8px; }
 
@@ -105,7 +107,7 @@
 .v2-composer > textarea + div span:last-child { margin-left: auto; font-variant-numeric: tabular-nums; }
 
 .v2-composer fieldset { min-width: 0; }
-.v2-composer fieldset button { background-color: var(--panel); }
+.v2-composer fieldset button { background-color: var(--panel); border-width: 2px; border-color: var(--border-strong); }
 .v2-composer fieldset button[aria-pressed="true"] {
   border-color: #EAFF36;
   background-color: rgb(234 255 54 / .45);
@@ -150,9 +152,9 @@
 .v2-recent li p + p { margin-top: 4px; }
 
 @media (max-width: 640px) {
-  .v2-home-intro { padding: 12px 0; }
+  .v2-home-intro { padding: 4px 0 12px; }
   .v2-home-bulb { margin-bottom: 4px; }
-  .v2-home-intro .v2-home-wordmark { margin-bottom: 10px; }
+  .v2-home-intro .v2-home-wordmark { font-size: clamp(50px, 15vw, 64px); margin-bottom: 12px; }
   .v2-home-intro h2 { font-size: 22px; }
   .v2-composer { padding: 16px 14px; }
   .v2-composer > textarea { min-height: 112px; }

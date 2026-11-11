@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import type { Report } from "@/types/report";
 import AdminClient, { type AdminMember, type AdminReport } from "./admin-client";
 
@@ -7,9 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   // 관리자 확인 (RLS도 막지만 UI에서도 차단)
   const { data: me } = await supabase

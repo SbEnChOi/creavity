@@ -7,20 +7,20 @@ export function isRedesignedRoute(pathname: string): boolean {
   return redesignedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 }
 
-export function resolveAppearance(value: string | null, pathname = ""): Appearance {
+export function resolveAppearance(value: string | null): Appearance {
   if (value === "dark" || value === "light") return value;
-  return isRedesignedRoute(pathname) ? "dark" : "light";
+  return "light";
 }
 
-export const appearanceBootstrapScript = `(()=>{let value=null;try{value=localStorage.getItem(${JSON.stringify(APPEARANCE_KEY)})}catch(e){}const path=window.location.pathname;const redesigned=${JSON.stringify(redesignedRoutes)}.some(route=>path===route||path.startsWith(route+'/'));document.documentElement.dataset.theme=value==='dark'||value==='light'?value:(redesigned?'dark':'light')})()`;
+export const appearanceBootstrapScript = `(()=>{let value=null;try{value=localStorage.getItem(${JSON.stringify(APPEARANCE_KEY)})}catch(e){}document.documentElement.dataset.theme=value==='dark'||value==='light'?value:'light'})()`;
 
 export function preferenceFor(current: Appearance): Appearance {
   return current === "dark" ? "light" : "dark";
 }
 
-export function readAppearance(storage: Pick<Storage, "getItem">, pathname = ""): Appearance {
-  try { return resolveAppearance(storage.getItem(APPEARANCE_KEY), pathname); }
-  catch { return resolveAppearance(null, pathname); }
+export function readAppearance(storage: Pick<Storage, "getItem">): Appearance {
+  try { return resolveAppearance(storage.getItem(APPEARANCE_KEY)); }
+  catch { return resolveAppearance(null); }
 }
 
 export function saveAppearance(storage: Pick<Storage, "setItem">, value: Appearance): boolean {

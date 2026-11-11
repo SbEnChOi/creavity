@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Globe, UserCheck, Users, Heart } from "lucide-react";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 import { getReportFields, type Report } from "@/types/report";
 import MentorButton from "./mentor-button";
 
@@ -23,9 +23,7 @@ export default async function ProfilePage({
 }) {
   const params = await paramsPromise;
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   const { data: profile } = await supabase
     .from("profiles")

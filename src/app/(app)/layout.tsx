@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient, getServerUser } from "@/lib/supabase/server";
 
 export default async function AppLayout({
   children,
@@ -8,9 +8,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getServerUser();
 
   if (!user) redirect("/login");
 

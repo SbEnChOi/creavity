@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createSupabaseBrowserClient();
-  function destination(){const next=new URLSearchParams(window.location.search).get("next");return next&&/^\/ai-share\/[0-9a-f-]{36}$/i.test(next)?next:"/dashboard";}
+  function destination(){const next=new URLSearchParams(window.location.search).get("next");return next&&/^\/ai-share\/[0-9a-f-]{36}$/i.test(next)?next:"/ai";}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +84,7 @@ export default function LoginPage() {
       const guestName = `게스트-${data.user.id.slice(0, 4)}`;
       await ensureProfile(supabase, data.user, guestName);
     }
-    router.push("/dashboard");
+    router.push("/ai");
     router.refresh();
   };
 

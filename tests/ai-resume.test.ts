@@ -291,7 +291,10 @@ async function renderPage(params: { session?: string; idea?: string } = {}) {
   const sandbox = {
     exports, process: { env: { OPENAI_API_KEY: "placeholder" } },
     require(id: string) {
-      if (id === "@/lib/supabase/server") return { createSupabaseServerClient: async () => client };
+      if (id === "@/lib/supabase/server") return {
+        createSupabaseServerClient: async () => client,
+        getServerUser: async () => (await client.auth.getUser()).data.user,
+      };
       if (id === "@/components/ai/IdeaStudio") return { __esModule: true, default: Studio };
       return require(id);
     },
