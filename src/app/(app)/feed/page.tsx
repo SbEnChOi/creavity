@@ -35,20 +35,24 @@ export default async function FeedPage() {
   ]);
 
   const rows = (reports ?? []) as (Report & { reactions?: { count: number }[] })[];
+  let list = rows.map(({ reactions, ...report }) => { void reactions; return report as Report; });
   const reactionMap: Record<string, number> = {};
-  const list = rows.map((row) => {
-    const { reactions, ...report } = row;
-    reactionMap[row.id] = reactions?.[0]?.count ?? 0;
-    return report as Report;
-  });
+  rows.forEach(({ id, reactions }) => { reactionMap[id] = reactions?.[0]?.count ?? 0; });
 
   if (reportsError) {
+    const { data: plain } = await supabase
+      .from("reports")
+      .select("*")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(200);
+    list = (plain ?? []) as Report[];
     const ids = list.map((r) => r.id);
-    const { data: plain } = ids.length
+    const { data: counted } = ids.length
       ? await supabase.from("reactions").select("report_id").in("report_id", ids)
       : { data: [] as { report_id: string }[] };
     for (const id of ids) reactionMap[id] = 0;
-    (plain ?? []).forEach((r) => { reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1; });
+    (counted ?? []).forEach((r) => { reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1; });
   }
 
   const authorMap: Record<string, FeedAuthor> = Object.fromEntries(

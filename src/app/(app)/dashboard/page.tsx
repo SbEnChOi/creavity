@@ -19,21 +19,24 @@ export default async function DashboardPage() {
   if (error) console.error("reports fetch error:", error.message);
 
   const rows = (reports ?? []) as (Report & { reactions?: { count: number }[] })[];
+  let list = rows.map(({ reactions, ...report }) => { void reactions; return report as Report; });
   const reactionMap: Record<string, number> = {};
-  const list = rows.map((row) => {
-    const { reactions, ...report } = row;
-    reactionMap[row.id] = reactions?.[0]?.count ?? 0;
-    return report as Report;
-  });
+  rows.forEach(({ id, reactions }) => { reactionMap[id] = reactions?.[0]?.count ?? 0; });
 
   if (error) {
-    // 임베디드 집계가 실패하면 예전처럼 두 번 조회해 개수를 센다.
+    // 임베디드 집계가 실패하면 목록부터 다시 받아오고, 개수는 한 번 더 조회해 센다.
+    const { data: plain } = await supabase
+      .from("reports")
+      .select("*")
+      .eq("author_id", user!.id)
+      .order("updated_at", { ascending: false });
+    list = (plain ?? []) as Report[];
     const ids = list.map((r) => r.id);
-    const { data: plain } = ids.length
+    const { data: counted } = ids.length
       ? await supabase.from("reactions").select("report_id").in("report_id", ids)
       : { data: [] as { report_id: string }[] };
     for (const id of ids) reactionMap[id] = 0;
-    (plain ?? []).forEach((r) => { reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1; });
+    (counted ?? []).forEach((r) => { reactionMap[r.report_id] = (reactionMap[r.report_id] ?? 0) + 1; });
   }
 
   return <DashboardClient reports={list} reactionMap={reactionMap} />;
