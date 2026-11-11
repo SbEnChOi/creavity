@@ -1,0 +1,158 @@
+/* The home treatment is scoped to the existing memo composer and recent list. */
+.v2-studio-header > div:first-child {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.v2-studio-header > nav:empty { display: none; }
+.v2-studio-header:has(nav:empty) { margin-bottom: 0; }
+.v2-home-grid {
+  width: min(100%, 860px);
+  margin-inline: auto;
+}
+
+.v2-home-main,
+.v2-home-aside,
+.v2-recent { min-width: 0; }
+
+.v2-home-intro {
+  padding: clamp(24px, 6vh, 52px) 0 22px;
+  text-align: center;
+}
+
+.v2-home-bulb {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.v2-home-intro .v2-home-wordmark {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: max-content;
+  margin: 0 auto 20px;
+  padding: 0 .12em .15em;
+  font-size: clamp(46px, 5.2vw, 58px);
+  line-height: 1.05;
+}
+
+.v2-home-intro .v2-home-wordmark i { background: #EAFF36; }
+
+.v2-home-wordmark::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  border-radius: 50%;
+  background: var(--border);
+  content: "";
+}
+
+.v2-home-intro h2 {
+  font-size: clamp(24px, 2.6vw, 30px);
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -.025em;
+  word-break: keep-all;
+}
+
+.v2-home-intro p { margin-top: 8px; font-size: 14px; }
+
+.v2-composer {
+  padding: 18px 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .04);
+}
+
+.v2-composer:focus-within { border-color: var(--foreground); }
+
+.v2-composer > label[for="idea-seed"] { margin-bottom: 8px; }
+
+.v2-composer > textarea {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  field-sizing: content;
+  max-height: 50vh;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.v2-composer > textarea:focus { background: transparent; }
+.v2-composer > textarea::placeholder { color: rgb(var(--foreground-rgb) / .6); }
+.v2-composer > textarea + div { gap: 12px; flex-wrap: wrap; }
+.v2-composer > textarea + div span:last-child { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.v2-composer fieldset { min-width: 0; }
+.v2-composer fieldset button { background-color: var(--panel); }
+/* Foreground provides readable text and a visible border in either theme. */
+.v2-composer fieldset button[aria-pressed="true"] {
+  border-color: var(--foreground);
+  background-color: rgb(234 255 54 / .30);
+}
+.v2-composer fieldset button[aria-pressed="true"] .text-accent,
+.v2-composer fieldset button[aria-pressed="true"] .text-foreground\/70 { color: var(--foreground); }
+.v2-composer fieldset button:not([aria-pressed="true"]):hover { background-color: var(--surface); }
+.v2-composer fieldset button span { overflow-wrap: anywhere; }
+.v2-composer input[type="checkbox"] { flex-shrink: 0; }
+
+.v2-composer > div:last-child > p { max-width: 44rem; }
+.v2-composer > div:last-child > div { margin-left: auto; }
+.v2-composer .ai-primary,
+.v2-composer .ai-secondary { min-height: 42px; }
+
+.v2-home-aside { display: flex; flex-direction: column; margin-top: 38px; gap: 24px; }
+.v2-home-steps { order: 2; }
+.v2-home-steps ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.v2-home-steps ol > li { margin-top: 0; }
+.v2-recent { order: 1; }
+.v2-recent h2 { margin: 0; padding: 8px 8px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.v2-recent ul { padding-top: 6px; }
+.v2-recent li { margin-top: 0; }
+.v2-recent li > a,
+.v2-recent li > button {
+  min-height: 68px;
+  padding: 12px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 8px;
+}
+.v2-recent li > a:hover,
+.v2-recent li > button:hover { background: var(--surface); }
+.v2-recent li p:first-child { overflow-wrap: anywhere; font-size: 14px; }
+.v2-recent li p + p { margin-top: 4px; }
+
+@media (max-width: 640px) {
+  .v2-home-intro { padding: 12px 0; }
+  .v2-home-bulb { margin-bottom: 4px; }
+  .v2-home-intro .v2-home-wordmark { margin-bottom: 10px; }
+  .v2-home-intro h2 { font-size: 22px; }
+  .v2-composer { padding: 16px 14px; }
+  .v2-composer > textarea { min-height: 112px; }
+  .v2-composer > textarea + div { font-size: 13px; line-height: 1.4; }
+  .v2-composer > div:last-child > p { font-size: 13px; line-height: 1.6; }
+  .v2-composer > div:last-child > div { width: 100%; margin-left: 0; }
+  .v2-composer > div:last-child button { flex: 1 1 140px; }
+  .v2-home-steps ol { grid-template-columns: 1fr; gap: 16px; }
+}

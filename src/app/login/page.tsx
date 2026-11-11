@@ -3,6 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import { useState } from "react";
+import Wordmark from "@/components/Wordmark";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -89,10 +91,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
+        <div className="mb-2 flex justify-end"><ThemeToggle /></div>
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground text-white text-xl font-bold mb-5">
-            C
-          </div>
+          <Wordmark href="/login" className="mb-5" />
           <h1 className="text-2xl font-bold text-foreground mb-1.5">Creavy · 크래비</h1>
           <p className="text-sm text-foreground/60">
             떠오른 생각을 정리하고 함께 나누는 아이디어 플랫폼
@@ -110,7 +111,7 @@ export default function LoginPage() {
               }}
               className={`flex-1 py-1.5 text-sm rounded transition-colors ${
                 mode === m
-                  ? "bg-white text-foreground font-medium"
+                  ? "bg-panel text-foreground font-medium"
                   : "text-foreground/60 hover:text-foreground"
               }`}
             >
@@ -157,14 +158,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-foreground text-white text-sm font-medium hover:bg-foreground/90 disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md bg-foreground text-inverse text-sm font-medium hover:bg-foreground/90 disabled:opacity-50 transition-colors"
           >
             {loading && <Loader2 size={14} className="animate-spin" />}
             {mode === "login" ? "로그인" : "가입하고 시작하기"}
           </button>
         </form>
 
-        <div className="my-5 flex items-center gap-3 text-xs text-foreground/40">
+        <div className="my-5 flex items-center gap-3 text-xs text-foreground/60">
           <div className="flex-1 h-px bg-border-default" />
           또는
           <div className="flex-1 h-px bg-border-default" />
@@ -179,7 +180,7 @@ export default function LoginPage() {
           게스트로 둘러보기
         </button>
 
-        <p className="mt-6 text-center text-xs text-foreground/40">
+        <p className="mt-6 text-center text-xs text-foreground/60">
           가입하면 내 아이디어를 보관하고 다른 사람과 공유할 수 있어요.
         </p>
       </div>
@@ -206,7 +207,7 @@ function FormInput({
         {...rest}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm rounded-md bg-white border border-border-default focus:outline-none focus:border-foreground/30 transition-colors"
+        className="w-full px-3 py-2 text-sm rounded-md bg-panel border border-border-default focus:outline-none focus:border-foreground/30 transition-colors"
       />
     </label>
   );

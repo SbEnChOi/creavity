@@ -99,7 +99,7 @@ export default function SettingsClient({
   };
 
   return (
-    <div className="px-10 py-12 max-w-3xl">
+    <div className="px-5 py-8 sm:px-10 sm:py-12 max-w-3xl">
       <header className="mb-10">
         <h1 className="text-3xl font-bold text-foreground mb-1">환경설정</h1>
         <p className="text-sm text-foreground/60">
@@ -123,7 +123,7 @@ export default function SettingsClient({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="이름을 입력하세요"
-              className="w-full px-3 py-2 text-sm bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/30"
+              className="w-full px-3 py-2 text-sm bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-panel outline-none placeholder:text-foreground/65"
             />
           </div>
 
@@ -131,7 +131,7 @@ export default function SettingsClient({
             <label className="block text-xs font-medium text-foreground/60 mb-2">
               아바타 색상
             </label>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {COLOR_OPTIONS.map((c) => (
                 <button
                   key={c}
@@ -156,7 +156,7 @@ export default function SettingsClient({
               type="button"
               onClick={handleSaveProfile}
               disabled={savingProfile}
-              className="px-4 py-2 rounded-md bg-foreground text-white text-sm font-medium hover:bg-foreground/90 disabled:opacity-40 transition-colors"
+              className="px-4 py-2 rounded-md bg-foreground text-inverse text-sm font-medium hover:bg-foreground/90 disabled:opacity-40 transition-colors"
             >
               {savingProfile ? (
                 <span className="flex items-center gap-1.5">
@@ -168,7 +168,7 @@ export default function SettingsClient({
               )}
             </button>
             {profileSaved && (
-              <span className="flex items-center gap-1 text-xs text-green-600">
+              <span className="flex items-center gap-1 text-xs text-success-text">
                 <Check size={12} />
                 저장됨
               </span>
@@ -226,7 +226,7 @@ export default function SettingsClient({
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors disabled:opacity-50 ${
                       isMentor
                         ? "bg-accent/10 border-accent/30 text-accent hover:bg-accent/15"
-                        : "border-border-default text-foreground/70 hover:bg-white"
+                        : "border-border-default text-foreground/70 hover:bg-panel"
                     }`}
                   >
                     {isPending ? (

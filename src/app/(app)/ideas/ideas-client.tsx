@@ -61,7 +61,8 @@ export default function IdeasClient({
   const [ideas, setIdeas] = useState(initialIdeas);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [visibility, setVisibility] = useState<IdeaVisibility>("public");
+  const [visibility, setVisibility] = useState<IdeaVisibility>("private");
+  const [hasChosenVisibility, setHasChosenVisibility] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +70,7 @@ export default function IdeasClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || submitting) return;
+    if (!hasChosenVisibility) { setError("공개 범위를 선택해주세요."); return; }
     setSubmitting(true);
     setError(null);
 
@@ -91,6 +93,8 @@ export default function IdeasClient({
     setIdeas((prev) => [data as IdeaRow, ...prev]);
     setTitle("");
     setBody("");
+    setVisibility("private");
+    setHasChosenVisibility(false);
     router.refresh();
   };
 
@@ -108,7 +112,7 @@ export default function IdeasClient({
   };
 
   return (
-    <div className="px-10 py-12 max-w-3xl">
+    <div className="px-5 py-8 sm:px-10 sm:py-12 max-w-3xl">
       <header className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-1 flex items-center gap-2">
           <Lightbulb size={24} strokeWidth={1.75} className="text-amber-500" />
@@ -129,28 +133,29 @@ export default function IdeasClient({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="주제 (예: 책상 전체가 무선 충전 패드라면?)"
-          className="w-full px-3 py-2 text-sm bg-white rounded-md border border-transparent focus:border-foreground/20 outline-none placeholder:text-foreground/30"
+          className="w-full px-3 py-2 text-sm bg-panel rounded-md border border-transparent focus:border-foreground/20 outline-none placeholder:text-foreground/65"
         />
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={4}
           placeholder="내용 (생각나는 대로 자유롭게)"
-          className="w-full px-3 py-2 text-sm bg-white rounded-md border border-transparent focus:border-foreground/20 outline-none placeholder:text-foreground/30 resize-none"
+          className="w-full px-3 py-2 text-sm bg-panel rounded-md border border-transparent focus:border-foreground/20 outline-none placeholder:text-foreground/65 resize-none"
         />
 
         {/* 공개 범위 */}
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-foreground/40 mr-1">공개 범위</span>
+          <span className="text-xs text-foreground/65 mr-1">공개 범위 (필수 선택)</span>
           {VISIBILITY_OPTIONS.map(({ value, label, Icon }) => (
             <button
               key={value}
               type="button"
-              onClick={() => setVisibility(value)}
+              onClick={() => { setVisibility(value); setHasChosenVisibility(true); setError(null); }}
+              aria-pressed={hasChosenVisibility && visibility === value}
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
-                visibility === value
-                  ? "bg-foreground text-white"
-                  : "bg-white text-foreground/70 hover:bg-black/[0.04]"
+                hasChosenVisibility && visibility === value
+                  ? "bg-foreground text-inverse"
+                  : "bg-panel text-foreground/70 hover:bg-foreground/[0.04]"
               }`}
             >
               <Icon size={11} strokeWidth={1.75} />
@@ -165,15 +170,15 @@ export default function IdeasClient({
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <Link href="/ai" className="text-[11px] text-foreground/50 hover:text-accent inline-flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Link href="/ai?new=1" className="text-[11px] text-foreground/65 hover:text-accent inline-flex items-center gap-1">
             <Sparkles size={11} strokeWidth={1.75} />
-            AI와 아이디어 구체화하기
+            비공개 메모 저장 또는 AI로 구체화하기
           </Link>
           <button
             type="submit"
             disabled={!title.trim() || submitting}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-white text-sm font-medium hover:bg-foreground/90 disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-foreground text-inverse text-sm font-medium hover:bg-foreground/90 disabled:opacity-40 transition-colors"
           >
             {submitting ? (
               <Loader2 size={14} className="animate-spin" />
@@ -187,7 +192,7 @@ export default function IdeasClient({
 
       {/* 리스트 */}
       <section>
-        <h2 className="text-xs font-medium text-foreground/40 mb-3">
+        <h2 className="text-xs font-medium text-foreground/65 mb-3">
           최근 아이디어 {ideas.length > 0 && <span>({ideas.length})</span>}
         </h2>
 
@@ -219,7 +224,7 @@ export default function IdeasClient({
                       onClick={() => handleDelete(idea.id)}
                       disabled={pendingId === idea.id}
                       title="삭제"
-                      className="absolute top-3 right-3 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+                      className="absolute top-3 right-3 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 reveal-on-hover focus-visible:opacity-100 transition-opacity disabled:opacity-30"
                     >
                       {pendingId === idea.id ? (
                         <Loader2 size={13} className="animate-spin" />

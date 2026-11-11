@@ -32,6 +32,16 @@ export async function transition(current: SessionState | null, request: AiReques
   if (!current) throw new AiError("대화를 찾을 수 없습니다.", 404);
   const state = structuredClone(current);
   switch (request.action) {
+    case "begin_memo": {
+      if (state.phase !== "memo") throw new AiError("이미 시작한 대화예요.", 409);
+      if (state.seed.trim().length < 5) throw new AiError("AI와 대화하려면 메모를 5자 이상 입력해주세요.", 400);
+      state.mode = request.mode;
+      state.format = request.mode === "explore" ? "basic" : request.format;
+      state.useResearch = request.useResearch;
+      state.phase = "questions";
+      state.question = await deps.askQuestion(state, "goal");
+      break;
+    }
     case "resume": {
       if (state.phase !== "questions" || state.question) return state;
       const topic = nextTopic(state.answers);

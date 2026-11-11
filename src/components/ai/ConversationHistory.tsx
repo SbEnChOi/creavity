@@ -8,7 +8,7 @@ export function ConversationEntries({ messages }: { messages: ConversationEntry[
   return <ol className="space-y-5">{messages.map((entry,index)=>{
     const question = questionSchema.safeParse(entry.payload?.question);
     const draft = draftSchema.safeParse(entry.payload?.draft);
-    return <li key={index} className={`rounded-xl border border-border-default p-4 ${entry.role === "user" ? "bg-surface" : "bg-white"}`}><p className="mb-2 text-xs font-semibold text-foreground/65">{entry.role==="user"?"사용자":"크래비 AI"}</p>{draft.success?<DraftPreview draft={draft.data}/>:<><div className="text-base leading-7"><FormattedText value={entry.text}/></div>{question.success&&<ul className="mt-3 space-y-2 text-sm leading-6 text-foreground/75">{question.data.options.map(option=><li key={option.id}><span className="font-medium">{option.label}</span>{option.detail&&` — ${option.detail}`}</li>)}</ul>}</>}</li>;
+    return <li key={index} className={`rounded-xl border border-border-default p-4 ${entry.role === "user" ? "bg-surface" : "bg-panel"}`}><p className="mb-2 text-xs font-semibold text-foreground/65">{entry.role==="user"?"사용자":"크래비 AI"}</p>{draft.success?<DraftPreview draft={draft.data}/>:<><div className="text-base leading-7"><FormattedText value={entry.text}/></div>{question.success&&<ul className="mt-3 space-y-2 text-sm leading-6 text-foreground/75">{question.data.options.map(option=><li key={option.id}><span className="font-medium">{option.label}</span>{option.detail&&` — ${option.detail}`}</li>)}</ul>}</>}</li>;
   })}</ol>;
 }
 export default function ConversationHistory({ session }: { session: Session }) {

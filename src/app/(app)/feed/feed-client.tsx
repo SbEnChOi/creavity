@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Search, Globe, UserCheck, Users, Heart, X } from "lucide-react";
 import { getReportFields, type Report } from "@/types/report";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { CARD_COLORS, cardColor, type CardColor } from "@/lib/card-colors";
+import { CARD_COLORS, cardAppearance, cardColor, type CardColor } from "@/lib/card-colors";
 import ReportCardColor from "@/components/ReportCardColor";
 
 const AVATAR_BG: Record<string, string> = {
@@ -147,7 +147,7 @@ export default function FeedClient({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="제목, 작성자, 키워드 검색..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-white focus:border-foreground/20 transition-colors"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-panel focus:border-foreground/20 transition-colors"
           />
         </div>
       </div>
@@ -170,8 +170,8 @@ export default function FeedClient({
             aria-pressed={memberFilter === opt.value}
             className={`px-3 py-2 rounded-full text-sm transition-colors ${
               memberFilter === opt.value
-                ? "bg-foreground text-white"
-                : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+                ? "bg-foreground text-inverse"
+                : "bg-surface text-foreground/70 hover:bg-foreground/[0.06]"
             }`}
           >
             {opt.label}
@@ -197,8 +197,8 @@ export default function FeedClient({
             aria-pressed={dateFilter === opt.value}
             className={`px-3 py-2 rounded-full text-sm transition-colors ${
               dateFilter === opt.value
-                ? "bg-foreground text-white"
-                : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+                ? "bg-foreground text-inverse"
+                : "bg-surface text-foreground/70 hover:bg-foreground/[0.06]"
             }`}
           >
             {opt.label}
@@ -209,7 +209,7 @@ export default function FeedClient({
       {/* 차수 필터 */}
       {editions.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-5">
-          <span className="text-xs text-foreground/40 mr-0.5">차수</span>
+          <span className="text-xs text-foreground/65 mr-0.5">차수</span>
           {editions.map((e) => (
             <button
               key={e}
@@ -313,7 +313,7 @@ function FeedCard({
       : Users;
 
   return (
-    <article className="group rounded-xl border transition-colors" style={{borderColor:CARD_COLORS[card].border,backgroundColor:CARD_COLORS[card].background}}>
+    <article className="group report-colored-card rounded-xl border transition-colors" style={{"--card-bg":CARD_COLORS[card].background,"--card-border":CARD_COLORS[card].border,"--card-bg-dark":cardAppearance(card,"dark").background,"--card-border-dark":cardAppearance(card,"dark").border} as React.CSSProperties}>
     <Link href={`/reports/${report.id}`} className="block overflow-hidden rounded-t-xl">
       {firstImage && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -325,7 +325,7 @@ function FeedCard({
             <span className="text-foreground/50 font-medium">{report.edition}차</span>
           )}
           {getReportFields(report).map((f) => (
-            <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
+            <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-panel text-foreground/70 transition-colors">
               {f}
             </span>
           ))}
@@ -366,7 +366,7 @@ function FeedCard({
           </div>
         </div>
       <ReportCardColor color={card} onChange={value=>void changeCard(value)} busy={saving} title={report.title||"제목 없는 아이디어"}/>
-      {saveError&&<p role="alert" className="px-4 pb-3 text-xs leading-6 text-red-700">{saveError}</p>}
+      {saveError&&<p role="alert" className="px-4 pb-3 text-xs leading-6 text-error-text">{saveError}</p>}
     </article>
   );
 }

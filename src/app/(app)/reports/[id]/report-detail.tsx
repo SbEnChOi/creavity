@@ -319,13 +319,13 @@ export default function ReportDetail({
               value={commentBody}
               onChange={(e) => setCommentBody(e.target.value)}
               placeholder="댓글을 입력하세요..."
-              className="w-full px-3 py-2 text-base rounded-md bg-surface border border-border-default focus:outline-none focus:bg-white focus:border-foreground/20 transition-colors"
+              className="w-full px-3 py-2 text-base rounded-md bg-surface border border-border-default focus:outline-none focus:bg-panel focus:border-foreground/20 transition-colors"
             />
           </div>
           <button
             type="submit"
             disabled={!commentBody.trim() || submitting}
-            className="px-4 py-2 rounded-md bg-foreground text-white text-base font-medium hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 rounded-md bg-foreground text-inverse text-base font-medium hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             등록
           </button>

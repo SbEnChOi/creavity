@@ -120,7 +120,7 @@ export default function ImageUploadBox({
                   <div className="text-xs text-foreground/50">
                     클릭 · 드래그 · Ctrl+V로 붙여넣기
                   </div>
-                  <div className="text-[10px] text-foreground/40 mt-1">
+                  <div className="text-[10px] text-foreground/60 mt-1">
                     이미지 5MB 이하
                   </div>
                 </div>
@@ -155,7 +155,7 @@ export default function ImageUploadBox({
             <Plus size={14} strokeWidth={1.75} />
             사진 추가
           </button>
-          <span className="text-xs text-foreground/40">
+          <span className="text-xs text-foreground/60">
             {images.length}장 첨부됨
           </span>
         </div>
@@ -226,7 +226,7 @@ function Tile({ url, onRemove }: { url: string; onRemove: () => void }) {
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white reveal-on-hover focus-visible:opacity-100 transition-opacity"
         title="삭제"
       >
         <X size={12} strokeWidth={2} />

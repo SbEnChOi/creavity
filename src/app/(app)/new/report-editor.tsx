@@ -189,7 +189,7 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
           value={edition}
           onChange={(e) => setEdition(e.target.value === "" ? "" : Number(e.target.value))}
           placeholder="차수"
-          className="w-20 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/50 py-1"
+          className="w-20 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/65 py-1"
         />
         <span className="text-sm text-foreground/70">차수 (선택)</span>
       </div>
@@ -318,7 +318,7 @@ export default function ReportEditor({ initialReport, initialAiDraft, aiSessionI
           type="button"
           onClick={handlePublish}
           disabled={(!title.trim() && !hasContent(content)) || publishing}
-          className="px-4 py-2 rounded-md bg-accent text-white text-base font-medium hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-md bg-accent text-on-accent text-base font-medium hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         >
           {publishing ? (
             <span className="flex items-center gap-1.5"><Loader2 size={14} className="animate-spin" />발행 중...</span>
@@ -365,7 +365,7 @@ function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: str
           return (
             <button key={opt} type="button" onClick={() => togglePreset(opt)}
               className={`px-2.5 py-1 rounded-full text-sm transition-colors ${
-                active ? "bg-foreground text-white" : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+                active ? "bg-foreground text-inverse" : "bg-surface text-foreground/70 hover:bg-foreground/[0.06]"
               }`}>
               {opt}
             </button>
@@ -378,7 +378,7 @@ function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: str
           {customValues.map((v) => (
             <button key={v} type="button" onClick={() => removeCustom(v)}
               title="클릭해서 제거"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-foreground text-white hover:bg-foreground/85"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-foreground text-inverse hover:bg-foreground/85"
             >
               {v} <span className="opacity-60">×</span>
             </button>
@@ -395,7 +395,7 @@ function FieldSelect({ values, onChange }: { values: string[]; onChange: (v: str
             if (e.key === "Enter") { e.preventDefault(); addCustom(); }
           }}
           placeholder="기타 직접 입력 후 Enter 또는 추가"
-          className="flex-1 px-0 py-1.5 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/50"
+          className="flex-1 px-0 py-1.5 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/65"
         />
         <button
           type="button"
@@ -420,7 +420,7 @@ function SaveIndicator({ state, savedAt }: { state: SaveState; savedAt: Date | n
       {savedAt && <span className="text-foreground/60">· {savedAt.getHours().toString().padStart(2,"0")}:{savedAt.getMinutes().toString().padStart(2,"0")}</span>}
     </span>
   );
-  if (state === "error") return <span className="text-red-500">저장 실패</span>;
+  if (state === "error") return <span className="text-error-text">저장 실패</span>;
   return <span className="text-foreground/60">자동저장</span>;
 }
 
@@ -448,14 +448,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Input({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full px-0 py-1.5 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/50" />
+      className="w-full px-0 py-1.5 text-base leading-8 bg-transparent border-b border-border-default focus:border-foreground/40 outline-none placeholder:text-foreground/65" />
   );
 }
 
 function Textarea({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return (
     <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={3}
-      className="w-full min-h-36 px-4 py-3 text-base leading-8 bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-white outline-none placeholder:text-foreground/50 resize-y transition-colors" />
+      className="w-full min-h-36 px-4 py-3 text-base leading-8 bg-surface rounded-md border border-transparent focus:border-foreground/20 focus:bg-panel outline-none placeholder:text-foreground/65 resize-y transition-colors" />
   );
 }
 
@@ -469,7 +469,7 @@ function Segmented({ value, options, onChange }: { value: string; options: SegOp
         const label = typeof opt === "string" ? opt : opt.label;
         return (
           <button key={v} type="button" onClick={() => onChange(value === v ? "" : v)}
-            className={`px-2.5 py-1 text-sm rounded transition-colors ${value === v ? "bg-white text-foreground font-medium" : "text-foreground/75 hover:text-foreground"}`}>
+            className={`px-2.5 py-1 text-sm rounded transition-colors ${value === v ? "bg-panel text-foreground font-medium" : "text-foreground/75 hover:text-foreground"}`}>
             {label}
           </button>
         );
@@ -489,8 +489,8 @@ function VisibilityChips({ value, onChange }: { value: Visibility; onChange: (v:
           onClick={() => onChange(v)}
           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm transition-colors ${
             value === v
-              ? "bg-foreground text-white"
-              : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+              ? "bg-foreground text-inverse"
+              : "bg-surface text-foreground/70 hover:bg-foreground/[0.06]"
           }`}
         >
           <Icon size={11} strokeWidth={1.75} />

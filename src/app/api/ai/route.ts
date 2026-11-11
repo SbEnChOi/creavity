@@ -92,6 +92,9 @@ export async function POST(req: Request) {
       target = stored;
     }
     await lock(target, operation.action === "start" ? target.revision : operation.revision);
+    if (operation.action === "begin_memo" && (target.state.phase !== "memo" || target.state.seed.trim().length < 5)) {
+      throw new AiError("저장된 메모를 확인해주세요. AI 구체화에는 5자 이상이 필요해요.", 400);
+    }
     const { data: allowed, error: quotaError } = await supabase.rpc("claim_ai_request");
     if (quotaError) throw new AiError("AI 저장소 연결을 확인해주세요.", 503);
     if (!allowed) throw new AiError("시간당 40회 이용 한도에 도달했어요. 대화는 저장되어 있으니 다음 시간에 이어갈 수 있어요.", 429);

@@ -56,7 +56,7 @@ export type SessionState = {
   sourceSessionId?: string;
   focusDirection?: string;
   explorationContext?: { possibilities: string; suggestions: string[] };
-  phase: "questions" | "confirm" | "review";
+  phase: "memo" | "questions" | "confirm" | "review";
   answers: Answer[]; question: Question | null; clarification: string;
   research: Research | null; draft: Draft | null; confirmed: boolean;
   history?: Answer[];
@@ -68,10 +68,10 @@ export type Session = { id: string; revision: number; state: SessionState; updat
 
 const answerSchema = z.object({ topic: z.enum(TOPICS), question: z.string().max(2000), value: z.string().max(16000) });
 export const sessionStateSchema = z.object({
-  seed: z.string().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional(),
+  seed: z.string().min(1).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional(),
   sourceSessionId: z.string().uuid().optional(), focusDirection: z.string().max(2000).optional(),
   explorationContext: z.object({ possibilities: z.string(), suggestions: z.array(z.string()) }).optional(),
-  phase: z.enum(["questions", "confirm", "review"]), answers: z.array(answerSchema).max(6),
+  phase: z.enum(["memo", "questions", "confirm", "review"]), answers: z.array(answerSchema).max(6),
   question: questionSchema.extend({ topic: z.enum(TOPICS) }).nullable(), clarification: z.string(),
   research: z.object({ text: z.string(), citations: z.array(z.object({ title: z.string(), url: z.string(), start: z.number(), end: z.number() })), resources: z.array(z.object({ title: z.string(), url: z.string(), kind: z.enum(["web", "video", "image"]), thumbnail: z.string().optional(), credit: z.string().optional() })), warning: z.string().optional(), videoSearchUrl: z.string().optional() }).nullable(),
   draft: draftSchema.nullable(), confirmed: z.boolean(), history: z.array(answerSchema).optional(), pendingAnswer: answerSchema.nullable().optional(),
@@ -81,6 +81,7 @@ export const sessionSchema = z.object({ id: z.string().uuid(), revision: z.numbe
 
 export const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("start"), requestId: z.string().uuid().optional(), seed: z.string().trim().min(5).max(8000), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]).optional() }),
+  z.object({ action: z.literal("begin_memo"), id: z.string().uuid(), revision: z.number().int().nonnegative(), format: z.enum(["basic", "extended"]), useResearch: z.boolean(), mode: z.enum(["explore", "focus"]) }),
   z.object({ action: z.literal("resume"), id: z.string().uuid(), revision: z.number().int().nonnegative() }),
   z.object({ action: z.literal("fork_focus"), requestId: z.string().uuid().optional(), id: z.string().uuid(), revision: z.number().int().nonnegative(), direction: z.string().trim().min(3).max(2000) }),
   z.object({ action: z.literal("answer"), id: z.string().uuid(), revision: z.number().int().nonnegative(), choices: z.array(z.string().max(80)).max(6), custom: z.string().trim().max(2000).default("") }),

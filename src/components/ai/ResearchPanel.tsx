@@ -27,7 +27,7 @@ export default function ResearchPanel({ research }: { research: Research | null 
     {research.warning && <p className="text-sm text-foreground/75 bg-surface rounded-lg p-3">{research.warning}</p>}
     <div className="flex gap-1 border-b border-border-default pb-2" aria-label="자료 종류">
       {([ ["all", "전체"], ["web", "글"], ["image", "사진"], ["video", "영상"] ] as const).map(([value, label]) =>
-        <button type="button" key={value} aria-pressed={tab === value} onClick={() => setTab(value)} className={`rounded-md px-3 py-1.5 text-sm ${tab === value ? "bg-foreground text-white" : "hover:bg-surface text-foreground/75"}`}>{label}</button>)}
+        <button type="button" key={value} aria-pressed={tab === value} onClick={() => setTab(value)} className={`rounded-md px-3 py-1.5 text-sm ${tab === value ? "bg-foreground text-inverse" : "hover:bg-surface text-foreground/75"}`}>{label}</button>)}
     </div>
     <div className="grid gap-4">
       {resources.map((r) => {

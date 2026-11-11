@@ -21,7 +21,7 @@ export default async function AppLayout({
     .maybeSingle();
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background creavy-app-shell">
       <Sidebar profile={profile} />
       <main className="flex-1 min-w-0">{children}</main>
     </div>

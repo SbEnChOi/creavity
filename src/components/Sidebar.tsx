@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import Wordmark from "@/components/Wordmark";
+import ThemeToggle from "@/components/ThemeToggle";
 import { usePathname, useRouter } from "next/navigation";
 import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info, Lightbulb, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { isRedesignedRoute } from "@/lib/appearance";
 
 const menuItems = [
   { href: "/dashboard", label: "내 보고서", icon: FileText },
@@ -57,17 +60,15 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   };
 
   return (
-    <aside className="w-16 md:w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden">
+    <aside className={`w-16 md:w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden${isRedesignedRoute(pathname) ? " creavy-v2-sidebar" : ""}`}>
       <div className="px-3 md:px-5 pt-6 pb-4">
-        <Link href="/dashboard" className="inline-flex items-center gap-2">
-          <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-white text-sm font-bold">
-            C
-          </span>
-          <span className="hidden md:inline text-sm font-semibold text-foreground">Creavy</span>
+        <Link href="/dashboard" aria-label="Creavy 홈" className="flex w-8 items-center justify-center md:hidden">
+          <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-inverse text-sm font-bold">C</span>
         </Link>
+        <Wordmark href="/dashboard" className="hidden md:inline-flex" />
       </div>
 
-      <nav className="flex-1 px-2 py-2">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
         <ul className="space-y-0.5">
           {[
             ...menuItems,
@@ -84,10 +85,11 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                 <Link
                   href={href}
                   aria-label={label}
+                  aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
                     active
-                      ? "bg-black/[0.06] text-foreground font-medium"
-                      : "text-foreground/70 hover:bg-black/[0.04] hover:text-foreground"
+                      ? "bg-foreground/[0.06] text-foreground font-medium"
+                      : "text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground"
                   }`}
                 >
                   <Icon size={16} strokeWidth={1.75} className="shrink-0" />
@@ -100,12 +102,13 @@ export default function Sidebar({ profile }: { profile: Profile }) {
       </nav>
 
       <div className="px-2 pb-3 relative">
+        <div className="mb-1 flex justify-center md:justify-start"><ThemeToggle /></div>
         {menuOpen && (
-          <div className="absolute bottom-full left-2 right-2 mb-1 bg-white border border-border-default rounded-md py-1 shadow-sm">
+          <div id="account-menu" className="absolute z-20 bottom-full left-2 w-max min-w-[10rem] md:right-2 md:w-auto md:min-w-0 mb-1 bg-panel border border-border-default rounded-md py-1 shadow-sm">
             <button
               type="button"
               onClick={handleSignOut}
-              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-foreground/70 hover:bg-black/[0.04] hover:text-foreground"
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-foreground/70 hover:bg-foreground/[0.04] hover:text-foreground"
             >
               <LogOut size={14} strokeWidth={1.75} />
               로그아웃
@@ -114,8 +117,11 @@ export default function Sidebar({ profile }: { profile: Profile }) {
         )}
         <button
           type="button"
+          aria-label={`${name} 계정 메뉴`}
+          aria-expanded={menuOpen}
+          aria-controls="account-menu"
           onClick={() => setMenuOpen((v) => !v)}
-          className="w-full flex items-center gap-2.5 px-1 md:px-2.5 py-2 rounded-md hover:bg-black/[0.04] transition-colors text-left"
+          className="w-full flex items-center gap-2.5 px-1 md:px-2.5 py-2 rounded-md hover:bg-foreground/[0.04] transition-colors text-left"
         >
           <span
             className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold shrink-0 ${avatarBg[color] ?? avatarBg.gray}`}

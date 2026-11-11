@@ -186,7 +186,7 @@ function ReportCard({
             </span>
           )}
           {getReportFields(report).map((f) => (
-            <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
+            <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-panel text-foreground/70 transition-colors">
               {f}
             </span>
           ))}

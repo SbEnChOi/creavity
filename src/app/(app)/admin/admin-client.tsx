@@ -183,7 +183,7 @@ export default function AdminClient({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={tab === "reports" ? "제목·작성자 검색..." : "이름 검색..."}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-white focus:border-foreground/20 transition-colors"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-panel focus:border-foreground/20 transition-colors"
           />
         </div>
       </div>
@@ -367,7 +367,7 @@ function MemberTable({
                   onClick={() => onToggleAdmin(m.id, isAdmin)}
                   disabled={pendingId === m.id || isMe}
                   title={isMe ? "본인은 변경 불가" : isAdmin ? "관리자 해제" : "관리자 지정"}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-xs font-medium text-foreground/70 hover:bg-white transition-colors disabled:opacity-30"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border-default text-xs font-medium text-foreground/70 hover:bg-panel transition-colors disabled:opacity-30"
                 >
                   {pendingId === m.id ? (
                     <Loader2 size={12} className="animate-spin" />

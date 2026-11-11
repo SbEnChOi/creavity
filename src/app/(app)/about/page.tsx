@@ -2,9 +2,9 @@ import { Code2, Clock, User, Target } from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <div className="px-10 py-12 max-w-2xl">
+    <div className="px-5 py-8 sm:px-10 sm:py-12 max-w-2xl">
       <header className="mb-10">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground text-white text-xl font-bold mb-4">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-foreground text-inverse text-xl font-bold mb-4">
           C
         </div>
         <h1 className="text-3xl font-bold text-foreground mb-1">Creavy · 크래비</h1>
@@ -14,7 +14,7 @@ export default function AboutPage() {
       </header>
 
       <section className="mb-10">
-        <h2 className="text-xs font-medium text-foreground/40 mb-3">정보</h2>
+        <h2 className="text-xs font-medium text-foreground/65 mb-3">정보</h2>
         <ul className="space-y-3">
           <InfoRow Icon={User} label="제작자" value="20625 최승빈" />
           <InfoRow Icon={Code2} label="개발 도구" value="with Claude Code" />
@@ -23,7 +23,7 @@ export default function AboutPage() {
       </section>
 
       <section>
-        <h2 className="text-xs font-medium text-foreground/40 mb-3 flex items-center gap-1.5">
+        <h2 className="text-xs font-medium text-foreground/65 mb-3 flex items-center gap-1.5">
           <Target size={12} strokeWidth={1.75} />
           만든 목적
         </h2>

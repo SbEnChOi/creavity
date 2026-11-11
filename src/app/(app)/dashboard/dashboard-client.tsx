@@ -87,7 +87,7 @@ export default function DashboardClient({
         </div>
         <Link
           href="/new"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-white text-sm font-medium hover:bg-foreground/90 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-md bg-foreground text-inverse text-sm font-medium hover:bg-foreground/90 transition-colors"
         >
           <Plus size={16} strokeWidth={2} />
           새로 작성
@@ -107,7 +107,7 @@ export default function DashboardClient({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="제목, 분야, 설명 검색..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-white focus:border-foreground/20 transition-colors"
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-surface border border-border-default focus:outline-none focus:bg-panel focus:border-foreground/20 transition-colors"
           />
         </div>
       </div>
@@ -121,8 +121,8 @@ export default function DashboardClient({
             onClick={() => setStatusFilter(opt.value)}
             className={`px-3 py-1 rounded-full text-xs transition-colors ${
               statusFilter === opt.value
-                ? "bg-foreground text-white"
-                : "bg-surface text-foreground/70 hover:bg-black/[0.06]"
+                ? "bg-foreground text-inverse"
+                : "bg-surface text-foreground/70 hover:bg-foreground/[0.06]"
             }`}
           >
             {opt.label}
@@ -133,7 +133,7 @@ export default function DashboardClient({
       {/* 분야 필터 칩 (보고서에 분야가 있을 때만 노출) */}
       {availableFields.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-5">
-          <span className="text-xs text-foreground/40 mr-0.5">분야</span>
+          <span className="text-xs text-foreground/65 mr-0.5">분야</span>
           {availableFields.map((field) => (
             <button
               key={field}
@@ -225,7 +225,7 @@ function ReportCard({
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(report.id); }}
         disabled={deleting}
         title="삭제"
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-30"
+        className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 reveal-on-hover focus-visible:opacity-100 transition-opacity disabled:opacity-30"
       >
         <Trash2 size={14} strokeWidth={1.75} />
       </button>
@@ -238,7 +238,7 @@ function ReportCard({
           <span className="text-foreground/50 font-medium">{report.edition}차</span>
         )}
         {getReportFields(report).map((f) => (
-          <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-white text-foreground/70 transition-colors">
+          <span key={f} className="px-1.5 py-0.5 rounded bg-surface group-hover:bg-panel text-foreground/70 transition-colors">
             {f}
           </span>
         ))}

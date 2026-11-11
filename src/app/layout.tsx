@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { appearanceBootstrapScript } from "@/lib/appearance";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head><script dangerouslySetInnerHTML={{ __html: appearanceBootstrapScript }} /></head>
       <body className="antialiased">{children}</body>
     </html>
   );
