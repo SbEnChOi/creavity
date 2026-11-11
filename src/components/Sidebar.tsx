@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Wordmark from "@/components/Wordmark";
 import ThemeToggle from "@/components/ThemeToggle";
+import Tooltip from "@/components/Tooltip";
 import { usePathname, useRouter } from "next/navigation";
 import { FileText, PenSquare, Users, Settings, LogOut, Shield, Info, Lightbulb, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -62,9 +63,9 @@ export default function Sidebar({ profile }: { profile: Profile }) {
   return (
     <aside className={`w-16 md:w-60 shrink-0 h-screen sticky top-0 flex flex-col bg-surface border-r border-border-default print:hidden${isRedesignedRoute(pathname) ? " creavy-v2-sidebar" : ""}`}>
       <div className="px-3 md:px-5 pt-6 pb-4">
-        <Link href="/dashboard" aria-label="Creavy 홈" className="flex w-8 items-center justify-center md:hidden">
+        <Tooltip label="Creavy 홈" side="right" mobileOnly><Link href="/dashboard" aria-label="Creavy 홈" className="flex w-8 items-center justify-center md:hidden">
           <span className="flex items-center justify-center w-8 h-8 rounded-md bg-foreground text-inverse text-sm font-bold">C</span>
-        </Link>
+        </Link></Tooltip>
         <Wordmark href="/dashboard" className="hidden md:inline-flex" />
       </div>
 
@@ -82,7 +83,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                 : pathname.startsWith(href);
             return (
               <li key={href}>
-                <Link
+                <Tooltip label={label} side="right" mobileOnly><Link
                   href={href}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
@@ -94,7 +95,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
                 >
                   <Icon size={16} strokeWidth={1.75} className="shrink-0" />
                   <span className="hidden md:inline">{label}</span>
-                </Link>
+                </Link></Tooltip>
               </li>
             );
           })}
@@ -115,7 +116,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
             </button>
           </div>
         )}
-        <button
+        <Tooltip label={`${name} 계정 메뉴`} side="right" mobileOnly><button
           type="button"
           aria-label={`${name} 계정 메뉴`}
           aria-expanded={menuOpen}
@@ -136,7 +137,7 @@ export default function Sidebar({ profile }: { profile: Profile }) {
               {clubName ?? "개인 공간"}
             </span>
           </span>
-        </button>
+        </button></Tooltip>
       </div>
     </aside>
   );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Copy, Globe, Lock, Share2, Users, X } from "lucide-react";
 import type { Session } from "@/lib/ai/schema";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Tooltip from "@/components/Tooltip";
 
 type Share = { id: string; visibility: "private" | "custom" | "public"; recipient_ids: string[] };
 export default function ShareIdea({ session, disabled }: { session: Session; disabled?: boolean }) {
@@ -44,7 +45,7 @@ export default function ShareIdea({ session, disabled }: { session: Session; dis
   }
   return <><button ref={trigger} type="button" onClick={() => setOpen(true)} disabled={disabled} className="ai-secondary"><Share2 size={16} />아이디어 공유</button>
     <dialog ref={dialog} onCancel={close} aria-labelledby="share-idea-heading" className="w-[min(92vw,560px)] rounded-2xl border border-border-default bg-panel p-0 text-foreground backdrop:bg-black/30">
-      <div className="p-6 md:p-8"><div className="mb-3 flex items-center justify-between"><h2 id="share-idea-heading" className="text-xl font-semibold">정리한 아이디어 공유하기</h2><button type="button" aria-label="공유 설정 닫기" onClick={close} className="rounded-lg p-2 hover:bg-surface"><X size={18}/></button></div>
+      <div className="p-6 md:p-8"><div className="mb-3 flex items-center justify-between"><h2 id="share-idea-heading" className="text-xl font-semibold">정리한 아이디어 공유하기</h2><Tooltip label="공유 설정 닫기"><button type="button" aria-label="공유 설정 닫기" onClick={close} className="rounded-lg p-2 hover:bg-surface"><X size={18}/></button></Tooltip></div>
         <p className="mb-6 text-sm leading-6 text-foreground/70">정리본과 참고 자료만 공유해요. 원문 메모와 비공개 대화는 포함하지 않아요. 수정한 정리본은 공유 설정을 다시 저장해야 반영돼요.</p>
         <fieldset disabled={busy || !loaded}><legend className="mb-3 text-sm font-medium">누가 볼 수 있나요?</legend><div className="space-y-2">{([
           ["private", "나만 보기", "기존 공유 링크에서도 내용을 볼 수 없어요.", Lock], ["custom", "선택한 사용자", "로그인한 공유 대상만 볼 수 있어요.", Users], ["public", "링크가 있는 누구나", "로그인 없이 정리본을 볼 수 있어요.", Globe],

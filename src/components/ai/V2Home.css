@@ -106,13 +106,19 @@
 
 .v2-composer fieldset { min-width: 0; }
 .v2-composer fieldset button { background-color: var(--panel); }
-/* Foreground provides readable text and a visible border in either theme. */
 .v2-composer fieldset button[aria-pressed="true"] {
-  border-color: var(--foreground);
-  background-color: rgb(234 255 54 / .30);
+  border-color: #EAFF36;
+  background-color: rgb(234 255 54 / .45);
+  color: #000000;
+}
+/* The charcoal panel swallows the tint, so dark mode needs a denser fill. */
+:root[data-theme="dark"] .v2-composer fieldset button[aria-pressed="true"] {
+  background-color: rgb(234 255 54 / .60);
 }
 .v2-composer fieldset button[aria-pressed="true"] .text-accent,
-.v2-composer fieldset button[aria-pressed="true"] .text-foreground\/70 { color: var(--foreground); }
+.v2-composer fieldset button[aria-pressed="true"] .text-foreground\/70 { color: #000000; }
+.v2-composer fieldset button[aria-pressed="true"] .font-semibold { font-weight: 700; }
+.v2-composer fieldset button[aria-pressed="true"] span.text-foreground\/70 { color: #0F0F00; font-weight: 500; }
 .v2-composer fieldset button:not([aria-pressed="true"]):hover { background-color: var(--surface); }
 .v2-composer fieldset button span { overflow-wrap: anywhere; }
 .v2-composer input[type="checkbox"] { flex-shrink: 0; }

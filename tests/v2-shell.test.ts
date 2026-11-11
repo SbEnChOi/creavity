@@ -31,6 +31,13 @@ test("initial paint and route reads use the same stored choice and fallback", ()
   }
 });
 
+test("the mobile sidebar account button keeps its touch target inside the tooltip wrapper", async () => {
+  const css = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+  const tooltip = await readFile(new URL("../src/components/Tooltip.css", import.meta.url), "utf8");
+  assert.match(tooltip, /\.creavy-tooltip-trigger\s*\{\s*display:\s*contents;\s*\}/);
+  assert.match(css, /\.creavy-v2-sidebar > div:last-child > button,\s*\.creavy-v2-sidebar > div:last-child > \.creavy-tooltip-trigger > button\s*\{\s*min-height:\s*44px;\s*justify-content:\s*center;\s*\}/);
+});
+
 test("the existing sidebar opts into redesigned chrome only on app routes", async () => {
   const source = await readFile(new URL("../src/components/Sidebar.tsx", import.meta.url), "utf8");
   const css = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");

@@ -21,7 +21,6 @@ export default async function AiPage({ searchParams: query }: { searchParams: Pr
     }
     if (!initialSession) setupError ||= "요청한 대화를 찾을 수 없습니다. 최근 대화에서 다시 선택해주세요.";
   }
-  else if(searchParams.new !== "1" && !searchParams.idea) initialSession = (data?.[0] as Session) ?? null;
   let initialSeed = "";
   if (searchParams.idea && z.string().uuid().safeParse(searchParams.idea).success) {
     const { data: idea } = await supabase.from("ideas").select("title, body").eq("id", searchParams.idea).eq("author_id", user.id).maybeSingle();

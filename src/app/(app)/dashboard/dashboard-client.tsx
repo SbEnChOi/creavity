@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Plus, Heart, Globe, Lock, Users, UserCheck, X, Trash2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Tooltip from "@/components/Tooltip";
 import { getReportFields, type Report, type Visibility } from "@/types/report";
 
 type StatusFilter = "all" | "published" | "draft" | "private";
@@ -217,18 +218,19 @@ function ReportCard({
   const description = report.content?.step1?.description ?? report.content?.summary?.thing ?? "";
   const date = new Date(report.updated_at);
   const dateStr = `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  const deleteButton = <button
+    type="button"
+    onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(report.id); }}
+    disabled={deleting}
+    aria-label="보고서 삭제"
+    className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 reveal-on-hover focus-visible:opacity-100 transition-opacity disabled:opacity-30"
+  >
+    <Trash2 size={14} strokeWidth={1.75} />
+  </button>;
 
   return (
     <div className="group relative">
-      <button
-        type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(report.id); }}
-        disabled={deleting}
-        title="삭제"
-        className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 reveal-on-hover focus-visible:opacity-100 transition-opacity disabled:opacity-30"
-      >
-        <Trash2 size={14} strokeWidth={1.75} />
-      </button>
+      {deleting ? deleteButton : <Tooltip label="보고서 삭제">{deleteButton}</Tooltip>}
       <Link
         href={`/reports/${report.id}`}
         className="block p-4 rounded-lg border border-border-default hover:bg-surface transition-colors"

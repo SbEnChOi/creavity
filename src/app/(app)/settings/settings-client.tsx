@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, UserPlus, UserMinus } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Tooltip from "@/components/Tooltip";
 
 const AVATAR_BG: Record<string, string> = {
   gray: "bg-gray-200 text-gray-700",
@@ -16,6 +17,9 @@ const AVATAR_BG: Record<string, string> = {
 };
 
 const COLOR_OPTIONS = ["gray", "blue", "green", "yellow", "red", "purple"];
+const AVATAR_COLOR_LABELS: Record<string, string> = {
+  gray: "회색", blue: "파랑", green: "초록", yellow: "노랑", red: "빨강", purple: "보라",
+};
 
 type Member = {
   id: string;
@@ -133,9 +137,10 @@ export default function SettingsClient({
             </label>
             <div className="flex flex-wrap items-center gap-2">
               {COLOR_OPTIONS.map((c) => (
-                <button
-                  key={c}
+                <Tooltip key={c} label={`${AVATAR_COLOR_LABELS[c]} 아바타 색상 선택`}><button
                   type="button"
+                  aria-label={`${AVATAR_COLOR_LABELS[c]} 아바타 색상 선택`}
+                  aria-pressed={avatarColor === c}
                   onClick={() => setAvatarColor(c)}
                   className={`flex items-center justify-center w-9 h-9 rounded-full text-sm font-semibold transition-all ${
                     AVATAR_BG[c]
@@ -146,7 +151,7 @@ export default function SettingsClient({
                   }`}
                 >
                   {(displayName || "?").charAt(0)}
-                </button>
+                </button></Tooltip>
               ))}
             </div>
           </div>

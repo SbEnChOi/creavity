@@ -31,10 +31,16 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
   const [notice,setNotice]=useState("");
   const [localReady,setLocalReady]=useState(false);
   const [localAvailable,setLocalAvailable]=useState(true);
+  const [cachedDraft,setCachedDraft]=useState<Composer|null>(null);
+  const [resuming,setResuming]=useState(false);
+  const canPersist=useRef(false);
+  const touched=useRef(false);
   const [online,setOnline]=useState(true);
   const [waitingId,setWaitingId]=useState<string|null>(null);
   const [rightTab,setRightTab]=useState<"intent"|"research">("intent");
   const inFlight=useRef(false);
+  const mounted=useRef(false);
+  const resumeGeneration=useRef(0);
   const heading=useRef<HTMLHeadingElement>(null);
   const pendingId=useRef<string|null>(null);
   const key=composerKey(storageScope);
@@ -43,10 +49,48 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
   const labels=topicLabels(activeMode);
   const base=session?{id:session.id,revision:session.revision}:null;
   const processing=!!session?.processing_until&&new Date(session.processing_until).getTime()>Date.now();
-  const disabled=busy||processing||!!waitingId;
+  const disabled=busy||savingMemo||processing||!!waitingId||resuming;
   const focusCandidates=[...new Set([...(state?.answers.find(a=>a.topic==="solution")?.value.split(" / ")??[]),...(state?.draft?.suggestions??[])])].slice(0,6);
   const composer:Composer={seed,mode,format,useResearch,sessionId:session?.id??pendingId.current,revision:session?.revision??null,choices,custom,feedback,focusDirection};
-  function persist(value:Composer) { try{setLocalAvailable(saveComposer(window.localStorage,key,value));}catch{setLocalAvailable(false);} }
+  function persist(value:Composer) {
+    if(!canPersist.current||!touched.current)return;
+    try{setLocalAvailable(saveComposer(window.localStorage,key,value));}
+    catch{canPersist.current=false;setLocalAvailable(false);}
+  }
+  function touch(){touched.current=true;}
+  function hasContent(draft:Composer) {
+    return draft.seed.trim().length>0||!!draft.sessionId;
+  }
+  function resumeCached() {
+    const draft=cachedDraft;
+    if(!draft||disabled)return;
+    const generation=++resumeGeneration.current;
+    const active=()=>mounted.current&&resumeGeneration.current===generation;
+    setError("");setNotice("");setMemoSaved(false);setSeed(draft.seed);
+    if(!draft.sessionId){
+      setSession(null);pendingId.current=null;
+      setMode(draft.mode);setFormat(draft.format);setUseResearch(draft.useResearch);
+      setChoices(draft.choices);setCustom(draft.custom);setFeedback(draft.feedback);setFocusDirection(draft.focusDirection);
+      setCachedDraft(null);touch();
+      persist({...draft,sessionId:null,revision:null});
+      if(!demo)window.history.replaceState(null,"","/ai?new=1");
+      return;
+    }
+    setResuming(true);setWaitingId(draft.sessionId);
+    readSaved(draft.sessionId).then(next=>{
+      if(!active())return;
+      const sameRevision=next.revision===draft.revision;
+      setCachedDraft(null);touch();
+      setSession(next);setMemoSaved(next.state.phase==="memo");
+      if(next.state.phase==="memo")setSeed(draft.seed);
+      setMode(draft.mode);setFormat(draft.format);setUseResearch(draft.useResearch);
+      if(sameRevision){setChoices(draft.choices);setCustom(draft.custom);setFeedback(draft.feedback);setFocusDirection(draft.focusDirection);}
+      else{setChoices([]);setCustom("");setFeedback("");setFocusDirection("");setNotice("대화가 변경되어 이전 답변을 자동 적용하지 않았어요. 저장된 대화에서 이어가주세요.");}
+      persist({...draft,sessionId:next.id,revision:next.revision,...(sameRevision?{}:{choices:[],custom:"",feedback:"",focusDirection:""})});
+      if(!demo)window.history.replaceState(null,"",`/ai?session=${next.id}`);
+    }).catch(()=>{if(!active())return;setNotice("대화를 불러오지 못했어요. 저장된 메모만 채웠어요.");})
+      .finally(()=>{if(active()){setResuming(false);setWaitingId(null);}});
+  }
   function accept(next:Session,clear=true) {
     setSession(next);setRecent(old=>[next,...old.filter(item=>item.id!==next.id)].slice(0,10));
     setMemoSaved(next.state.phase === "memo");
@@ -62,26 +106,21 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
     return sessionSchema.parse(data.session) as Session;
   }
   useEffect(()=>{
-    let active=true;
+    mounted.current=true;touched.current=false;resumeGeneration.current++;
     let cached:Composer|null=null;
-    try{cached=readComposer(window.localStorage,key);}catch{setLocalAvailable(false);}
-    if(cached){
-      if(!demo&&initialSession&&!initialSeed&&!new URLSearchParams(window.location.search).has("session")&&!cached.sessionId&&cached.seed.trim()){
-        setSession(null);setSeed(cached.seed);setMode(cached.mode);setFormat(cached.format);setUseResearch(cached.useResearch);
-        setNotice("작성 중이던 새 메모를 불러왔어요. 이전 대화는 보관함에 남아 있어요.");
+    try{cached=readComposer(window.localStorage,key);canPersist.current=true;}
+    catch{canPersist.current=false;setLocalAvailable(false);}
+    if(cached&&demo){
+      if(!initialSession){setSeed(cached.seed);setMode(cached.mode);setFormat(cached.format);setUseResearch(cached.useResearch);}
+      if(initialSession&&cached.sessionId===initialSession.id&&cached.revision===initialSession.revision){
+        if(initialSession.state.phase==="memo"){setSeed(cached.seed);setMode(cached.mode);setFormat(cached.format);setUseResearch(cached.useResearch);}
+        setChoices(cached.choices);setCustom(cached.custom);setFeedback(cached.feedback);setFocusDirection(cached.focusDirection);
       }
-      if(!initialSession&&(!initialSeed||demo)){setSeed(cached.seed);setMode(cached.mode);setFormat(cached.format);setUseResearch(cached.useResearch);}
-      if(initialSession&&cached.sessionId===initialSession.id&&cached.revision===initialSession.revision){setChoices(cached.choices);setCustom(cached.custom);setFeedback(cached.feedback);setFocusDirection(cached.focusDirection);}
-      else if(!demo&&!initialSession&&!initialSeed&&cached.sessionId&&new URLSearchParams(window.location.search).get("new")!=="1"){
-        pendingId.current=cached.sessionId;
-        setWaitingId(cached.sessionId);
-        readSaved(cached.sessionId).then(next=>{if(!active)return;setSession(next);if(next.state.phase==="memo"){setSeed(next.state.seed);setMemoSaved(true);}if(next.revision===cached.revision){setChoices(cached.choices);setCustom(cached.custom);setFeedback(cached.feedback);setFocusDirection(cached.focusDirection);}window.history.replaceState(null,"",`/ai?session=${next.id}`);}).catch(()=>{if(active)setNotice("이전에 적던 메모는 이 기기에 남아 있어요. 보관함에서 대화를 다시 찾을 수 있어요.");}).finally(()=>{if(active){pendingId.current=null;setWaitingId(null);}});
-      }
-    }
+    }else if(cached&&hasContent(cached))setCachedDraft(cached);
     setLocalReady(true);setOnline(navigator.onLine);
     const changed=()=>setOnline(navigator.onLine);
     window.addEventListener("online",changed);window.addEventListener("offline",changed);
-    return()=>{active=false;window.removeEventListener("online",changed);window.removeEventListener("offline",changed);};
+    return()=>{mounted.current=false;window.removeEventListener("online",changed);window.removeEventListener("offline",changed);};
   // Each mounted studio is scoped to its authenticated user and server-selected session.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[key]);
@@ -106,7 +145,7 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
     if(!value||savingMemo||inFlight.current||!localReady||!online)return;
     if(memoSaved && session?.state.phase==="memo" && value===session.state.seed){setNotice("이미 저장된 메모예요.");return;}
     const attempt=memoSaveRequest.current?.seed===value?memoSaveRequest.current:{id:crypto.randomUUID(),seed:value};
-    memoSaveRequest.current=attempt;inFlight.current=true;setSavingMemo(true);setError("");setNotice("");
+    memoSaveRequest.current=attempt;inFlight.current=true;setSavingMemo(true);setError("");setNotice("");touch();
     try{
       let next:Session;
       if(saveMemo)next=await saveMemo(value,attempt.id);
@@ -117,7 +156,7 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
   }
   async function run(request:AiRequest) {
     if(inFlight.current)return;
-    inFlight.current=true;setBusy(true);setError("");setNotice("");
+    inFlight.current=true;setBusy(true);setError("");setNotice("");touch();
     let sent=request;
     let expectedId=session?.id??null;
     let expectedRevision=session?.revision??-1;
@@ -139,7 +178,7 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
     }finally{inFlight.current=false;setBusy(false);}
   }
   function back(topic:Topic){if(base)void run({action:"back",...base,topic});}
-  function reset(){setSession(null);setSeed("");setMemoSaved(false);memoSaveRequest.current=null;setChoices([]);setCustom("");setFeedback("");setFocusDirection("");setError("");setNotice("");setWaitingId(null);pendingId.current=null;persist({...composer,seed:"",sessionId:null,revision:null,choices:[],custom:"",feedback:"",focusDirection:""});onReset?.();if(!demo)window.history.replaceState(null,"","/ai?new=1");}
+  function reset(){touch();setSession(null);setSeed("");setMemoSaved(false);memoSaveRequest.current=null;setChoices([]);setCustom("");setFeedback("");setFocusDirection("");setError("");setNotice("");setWaitingId(null);pendingId.current=null;persist({...composer,seed:"",sessionId:null,revision:null,choices:[],custom:"",feedback:"",focusDirection:""});onReset?.();if(!demo)window.history.replaceState(null,"","/ai?new=1");}
   const canAnswer=choices.length>0&&(!choices.includes("other")||custom.trim().length>0);
   return <div className="ai-studio mx-auto max-w-6xl px-5 py-7 md:px-9 md:py-10">
     {demo&&<p className="mb-6 rounded-xl bg-surface px-4 py-3 text-sm leading-6 text-foreground/70">미리보기예요. 대화는 이 브라우저에 저장하며 실제 AI·검색은 실행하지 않아요.</p>}
@@ -147,11 +186,20 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
     {(setupError||!configured)&&<p role="status" className="mb-6 rounded-xl bg-surface p-4 text-base leading-7">{setupError||"AI 연결을 준비하고 있어요. 잠시 후 이용해주세요."}</p>}
     {!online&&<p role="status" className="mb-5 rounded-xl border border-border-default bg-surface p-4 text-sm leading-6">인터넷 연결이 끊겼어요. 작성 중인 내용은 이 기기에 유지해요. 연결이 돌아오면 이어갈 수 있어요.</p>}
     {notice&&<p role="status" className="mb-5 rounded-xl bg-accent/5 px-4 py-3 text-sm leading-6 text-foreground/80">{notice}</p>}
+    {!demo&&cachedDraft&&<section role="status" aria-label="이어 쓸 작성 내용" className="mb-5 rounded-xl border border-border-default bg-surface p-4">
+      <p className="text-sm font-semibold">이 브라우저에 이어 쓸 작성 내용이 있어요</p>
+      <p className="mt-2 break-keep text-sm leading-6 text-foreground/70">저장된 메모와 아직 보내지 않은 답변이 남아 있어요. 이어서 작성하면 그것을 불러오고, 새로 시작해도 보관된 내용은 지우지 않아요.</p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" disabled={disabled} onClick={resumeCached} className="ai-primary">{resuming?<Loader2 size={16} className="animate-spin"/>:<ArrowRight size={16}/>}이어서 작성하기</button>
+        <button type="button" disabled={disabled} onClick={()=>setCachedDraft(null)} className="ai-secondary">새로 시작</button>
+        {resuming&&<span role="status" className="text-sm text-foreground/70">불러오는 중…</span>}
+      </div>
+    </section>}
     {!session||state?.phase==="memo"?<div className="v2-home-grid"><section className="v2-home-main"><div className="v2-home-intro"><span className="v2-home-bulb"><Lightbulb size={21} strokeWidth={1.5}/></span><div><Wordmark href={demo ? "/ai-preview" : "/ai"} animated className="v2-home-wordmark" /><h2 className="text-lg font-semibold">어떤 생각에서 시작할까요?</h2><p className="mt-1 text-sm leading-6 text-foreground/70">메모로 저장하거나, AI와 대화를 시작할 수 있어요.</p></div></div>
-      <form className="v2-composer" onSubmit={e=>{e.preventDefault();if(session?.state.phase==="memo" && seed.trim()===session.state.seed)void run({action:"begin_memo",id:session.id,revision:session.revision,format,useResearch,mode});else void run({action:"start",seed,format,useResearch,mode});}}><label htmlFor="idea-seed" className="mb-2 block text-sm font-semibold">아이디어 메모</label><textarea id="idea-seed" value={seed} maxLength={8000} onChange={e=>setSeed(e.target.value)} rows={6} placeholder={"문득 떠오른 아이디어나 해결하고 싶은 불편을 적어주세요.\n예: 읽다가 떠오른 생각을 책갈피에 남겨, 나중에 다시 꺼내 쓰고 싶어요."} className="ai-textarea"/><div className="mt-2 flex items-center justify-between text-xs text-foreground/65"><span>{memoSaved&&session?.state.phase==="memo"&&seed.trim()!==session.state.seed?"수정한 내용은 새 메모로 저장돼요.":localReady&&localAvailable?"작성 중인 메모도 이 기기에 저장해요":"메모를 적어보세요"}</span><span>{seed.length.toLocaleString()} / 8,000</span></div>
-      <fieldset className="mt-7"><legend className="mb-3 text-sm font-semibold">어떤 대화를 나누고 싶나요?</legend><div className="grid gap-3 sm:grid-cols-2">{([["explore","가능성을 넓혀볼래요","활용 장면과 파생 기능을 탐색하고 나중에 쓸 아이디어로 보관해요."],["focus","실제로 써보고 싶어요","관심 있는 방향을 대상·방법·첫 실험으로 구체화해요."]] as const).map(([value,title,detail])=><button type="button" key={value} aria-pressed={mode===value} onClick={()=>{setMode(value);if(value==="explore")setFormat("basic");}} className={`rounded-xl border p-4 text-left transition-colors ${mode===value?"border-accent/50 bg-accent/5":"border-border-default hover:bg-surface"}`}><span className="flex items-center justify-between gap-2 text-base font-semibold">{title}{mode===value&&<Check size={16} className="shrink-0 text-accent"/>}</span><span className="mt-2 block break-keep text-sm leading-6 text-foreground/70">{detail}</span></button>)}</div><p className="mt-3 text-sm leading-6 text-foreground/65">먼저 넓게 탐색하고, 나중에 실행으로 이어가도 좋아요.</p></fieldset>
-      {mode==="focus"&&<fieldset className="mt-5"><legend className="mb-2 text-sm font-semibold">정리할 내용</legend><div className="flex flex-wrap gap-2">{([["basic","아이디어 정리"],["extended","아이디어 + 실행 계획"]] as const).map(([value,title])=><button key={value} type="button" aria-pressed={format===value} onClick={()=>setFormat(value)} className={`rounded-lg border px-3 py-2 text-sm ${format===value?"border-accent/40 bg-accent/5":"border-border-default"}`}>{title}</button>)}</div></fieldset>}
-      <label className="my-6 flex cursor-pointer items-start gap-3 text-sm leading-6 text-foreground/75"><input type="checkbox" checked={useResearch} onChange={e=>setUseResearch(e.target.checked)} className="mt-1.5 accent-accent"/><span>방향을 확인한 뒤 관련 사례와 글·사진·영상을 찾아볼게요.<span className="mt-1 block text-xs text-foreground/65">검색 서비스에 관련 주제가 전달돼요. 개인정보는 메모에서 지워주세요.</span></span></label>
+      <form className="v2-composer" onSubmit={e=>{e.preventDefault();if(session?.state.phase==="memo" && seed.trim()===session.state.seed)void run({action:"begin_memo",id:session.id,revision:session.revision,format,useResearch,mode});else void run({action:"start",seed,format,useResearch,mode});}}><label htmlFor="idea-seed" className="mb-2 block text-sm font-semibold">아이디어 메모</label><textarea id="idea-seed" value={seed} disabled={disabled} maxLength={8000} onChange={e=>{touch();setSeed(e.target.value);}} rows={6} placeholder={"문득 떠오른 아이디어나 해결하고 싶은 불편을 적어주세요.\n예: 읽다가 떠오른 생각을 책갈피에 남겨, 나중에 다시 꺼내 쓰고 싶어요."} className="ai-textarea"/><div className="mt-2 flex items-center justify-between text-xs text-foreground/65"><span>{memoSaved&&session?.state.phase==="memo"&&seed.trim()!==session.state.seed?"수정한 내용은 새 메모로 저장돼요.":localReady&&localAvailable?"작성 중인 메모도 이 기기에 저장해요":"메모를 적어보세요"}</span><span>{seed.length.toLocaleString()} / 8,000</span></div>
+      <fieldset className="mt-7"><legend className="mb-3 text-sm font-semibold">어떤 대화를 나누고 싶나요?</legend><div className="grid gap-3 sm:grid-cols-2">{([["explore","가능성을 넓혀볼래요","활용 장면과 파생 기능을 탐색하고 나중에 쓸 아이디어로 보관해요."],["focus","실제로 써보고 싶어요","관심 있는 방향을 대상·방법·첫 실험으로 구체화해요."]] as const).map(([value,title,detail])=><button type="button" key={value} aria-pressed={mode===value} onClick={()=>{touch();setMode(value);if(value==="explore")setFormat("basic");}} className={`rounded-xl border p-4 text-left transition-colors ${mode===value?"border-accent/50 bg-accent/5":"border-border-default hover:bg-surface"}`}><span className="flex items-center justify-between gap-2 text-base font-semibold">{title}{mode===value&&<Check size={16} className="shrink-0 text-accent"/>}</span><span className="mt-2 block break-keep text-sm leading-6 text-foreground/70">{detail}</span></button>)}</div><p className="mt-3 text-sm leading-6 text-foreground/65">먼저 넓게 탐색하고, 나중에 실행으로 이어가도 좋아요.</p></fieldset>
+      {mode==="focus"&&<fieldset className="mt-5"><legend className="mb-2 text-sm font-semibold">정리할 내용</legend><div className="flex flex-wrap gap-2">{([["basic","아이디어 정리"],["extended","아이디어 + 실행 계획"]] as const).map(([value,title])=><button key={value} type="button" aria-pressed={format===value} onClick={()=>{touch();setFormat(value);}} className={`rounded-lg border px-3 py-2 text-sm ${format===value?"border-accent/40 bg-accent/5":"border-border-default"}`}>{title}</button>)}</div></fieldset>}
+      <label className="my-6 flex cursor-pointer items-start gap-3 text-sm leading-6 text-foreground/75"><input type="checkbox" checked={useResearch} disabled={disabled} onChange={e=>{touch();setUseResearch(e.target.checked);}} className="mt-1.5 accent-accent"/><span>방향을 확인한 뒤 관련 사례와 글·사진·영상을 찾아볼게요.<span className="mt-1 block text-xs text-foreground/65">검색 서비스에 관련 주제가 전달돼요. 개인정보는 메모에서 지워주세요.</span></span></label>
       <div className="flex flex-wrap items-center justify-between gap-4 border-t border-border-default pt-5"><p className="max-w-sm text-xs leading-6 text-foreground/65">메모 저장 시 AI에 전송하지 않아요. 비공개 메모는 본인과 관리자가 볼 수 있어요.<br/>AI 구체화를 시작하면 메모와 답변이 AI 서비스로 전달돼요. AI 구체화에는 5자 이상 필요해요.</p><div className="flex flex-wrap gap-2"><button type="button" onClick={()=>void storeMemo()} disabled={!seed.trim()||disabled||savingMemo||!localReady||!online||storageScope==="preview"&&!demo||!!setupError} className="ai-secondary">{savingMemo?<Loader2 size={16} className="animate-spin"/>:<Check size={16}/>}메모 저장</button><button type="submit" disabled={seed.trim().length<5||disabled||savingMemo||!localReady||!online||!configured||!!setupError} className="ai-primary" title={seed.trim().length<5?"AI 구체화에는 5자 이상 필요해요.":undefined}>{busy?<Loader2 size={16} className="animate-spin"/>:<ArrowRight size={16}/>}AI로 구체화</button></div></div></form></section>
       <aside className="v2-home-aside"><div className="v2-home-steps rounded-2xl bg-surface p-5"><h2 className="text-sm font-semibold">생각을 정리하는 세 단계</h2><ol className="mt-5 space-y-5">{[["01","가능성을 발견해요","여러 답과 기타를 함께 고를 수 있어요."],["02","내 생각으로 남겨요","선택한 내용과 미정인 부분을 확인해요."],["03","필요할 때 이어가요","보관한 아이디어를 실행으로 발전시켜요."]].map(([n,t,d])=><li key={n} className="flex gap-3"><span className="text-xs text-foreground/60">{n}</span><div><p className="text-sm font-semibold">{t}</p><p className="mt-1 break-keep text-sm leading-6 text-foreground/70">{d}</p></div></li>)}</ol></div>{recent.length>0&&<section className="v2-recent"><h2 className="mb-3 text-sm font-semibold">이어서 생각해볼까요?</h2><ul className="space-y-3">{recent.slice(0,5).map(item=><li key={item.id}>{demo?<button type="button" onClick={()=>accept(item)} className="block w-full rounded-xl border border-border-default p-4 text-left hover:bg-surface"><p className="line-clamp-2 text-base font-medium">{item.state.draft?.title||item.state.seed}</p><p className="mt-2 text-xs text-foreground/65">{MODE_LABELS[dialogueMode(item.state)]} · {item.state.phase==="memo"?"비공개 메모":item.state.phase==="review"?"정리 완료":"진행 중"}</p></button>:<Link href={`/ai?session=${item.id}`} className="block rounded-xl border border-border-default p-4 hover:bg-surface"><p className="line-clamp-2 text-base font-medium">{item.state.draft?.title||item.state.seed}</p><p className="mt-2 text-xs text-foreground/65">{MODE_LABELS[dialogueMode(item.state)]} · {item.state.phase==="memo"?"비공개 메모":item.state.phase==="review"?"정리 완료":"진행 중"}</p></Link>}</li>)}</ul></section>}</aside></div>:
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_280px]"><section className="min-w-0"><div className="mb-5 flex flex-wrap items-center gap-3"><span className="rounded-full bg-accent/5 px-3 py-1 text-sm font-medium text-accent">{MODE_LABELS[activeMode]}</span><span className="ml-auto flex items-center gap-1.5 text-xs text-foreground/65"><CloudCheck size={14}/>{demo?"이 브라우저에 저장됨":"대화 저장됨"}</span></div>
@@ -162,12 +210,12 @@ export default function IdeaStudio({initialSession=null,sessions=[],initialSeed=
       {state?.pendingAnswer&&<div className="mb-4 rounded-xl bg-surface p-4"><p className="mb-2 text-xs font-semibold text-foreground/65">조금 더 확인하고 싶은 답변</p><p className="text-base leading-7">{state.pendingAnswer.value}</p></div>}
       {state?.refinementRequest&&state.phase==="questions"&&<p className="mb-4 rounded-xl bg-surface p-4 text-sm leading-7">정리 방향을 바꾸기 전에 생각을 다시 확인할게요.<span className="mt-2 block">{state.refinementRequest}</span></p>}
       {state?.phase==="questions"&&state.question&&<div className="motion-rise rounded-2xl border border-border-default p-5 md:p-7"><div className="mb-4 flex items-center gap-2 text-xs font-medium text-foreground/65"><MessageCircle size={15}/>크래비 AI</div><h2 ref={heading} tabIndex={-1} className="break-keep text-[22px] font-semibold leading-9 tracking-tight outline-none">{state.question.prompt}</h2>{state.question.reason&&<details className="mt-3"><summary className="cursor-pointer text-sm text-foreground/65">이 질문을 하는 이유</summary><p className="mt-2 break-keep text-sm leading-7 text-foreground/75">{state.question.reason}</p></details>}
-        <form className="mt-6" onSubmit={e=>{e.preventDefault();if(base)void run({action:"answer",...base,choices,custom});}}><fieldset disabled={disabled}><legend className="mb-3 text-sm text-foreground/70">여러 개 골라도 좋아요. 기타로 직접 적을 수도 있어요.</legend><div className="grid gap-3 sm:grid-cols-2">{[...state.question.options,{id:"other",label:"기타 · 직접 작성",detail:"선택지에 없는 생각을 적어주세요."}].map(option=><button type="button" key={option.id} aria-pressed={choices.includes(option.id)} onClick={()=>setChoices(old=>old.includes(option.id)?old.filter(id=>id!==option.id):[...old,option.id])} className={`ai-option ${choices.includes(option.id)?"ai-option-selected":""}`}><span className="ai-option-number" aria-hidden="true">{choices.includes(option.id)&&<Check size={14}/>}</span><span className="min-w-0"><span className="block break-keep text-base font-semibold leading-7">{option.label}</span><span className="mt-1 block break-keep text-sm leading-6 text-foreground/70">{option.detail}</span></span></button>)}</div>{choices.includes("other")&&<textarea aria-label="기타 답변" autoFocus value={custom} maxLength={2000} onChange={e=>setCustom(e.target.value)} rows={3} placeholder="떠오른 생각을 자유롭게 적어주세요." className="ai-textarea mt-4"/>}</fieldset><div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border-default pt-5"><button type="button" disabled={disabled||!online} onClick={()=>base&&void run({action:"clarify",...base})} className="text-sm text-foreground/70 hover:underline">다른 선택지로 물어봐주세요</button><div className="flex items-center gap-3"><span className="text-xs text-foreground/65" aria-live="polite">{choices.length>0?`${choices.length}개 선택`:"선택을 기다리고 있어요"}</span><button type="submit" disabled={!canAnswer||disabled||!online} className="ai-primary">{busy?<Loader2 size={16} className="animate-spin"/>:<ArrowRight size={16}/>}이 답변으로 이어가기</button></div></div></form></div>}
+        <form className="mt-6" onSubmit={e=>{e.preventDefault();if(base)void run({action:"answer",...base,choices,custom});}}><fieldset disabled={disabled}><legend className="mb-3 text-sm text-foreground/70">여러 개 골라도 좋아요. 기타로 직접 적을 수도 있어요.</legend><div className="grid gap-3 sm:grid-cols-2">{[...state.question.options,{id:"other",label:"기타 · 직접 작성",detail:"선택지에 없는 생각을 적어주세요."}].map(option=><button type="button" key={option.id} aria-pressed={choices.includes(option.id)} onClick={()=>{touch();setChoices(old=>old.includes(option.id)?old.filter(id=>id!==option.id):[...old,option.id]);}} className={`ai-option ${choices.includes(option.id)?"ai-option-selected":""}`}><span className="ai-option-number" aria-hidden="true">{choices.includes(option.id)&&<Check size={14}/>}</span><span className="min-w-0"><span className="block break-keep text-base font-semibold leading-7">{option.label}</span><span className="mt-1 block break-keep text-sm leading-6 text-foreground/70">{option.detail}</span></span></button>)}</div>{choices.includes("other")&&<textarea aria-label="기타 답변" autoFocus value={custom} maxLength={2000} onChange={e=>{touch();setCustom(e.target.value);}} rows={3} placeholder="떠오른 생각을 자유롭게 적어주세요." className="ai-textarea mt-4"/>}</fieldset><div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-border-default pt-5"><button type="button" disabled={disabled||!online} onClick={()=>base&&void run({action:"clarify",...base})} className="text-sm text-foreground/70 hover:underline">다른 선택지로 물어봐주세요</button><div className="flex items-center gap-3"><span className="text-xs text-foreground/65" aria-live="polite">{choices.length>0?`${choices.length}개 선택`:"선택을 기다리고 있어요"}</span><button type="submit" disabled={!canAnswer||disabled||!online} className="ai-primary">{busy?<Loader2 size={16} className="animate-spin"/>:<ArrowRight size={16}/>}이 답변으로 이어가기</button></div></div></form></div>}
       {state?.phase==="confirm"&&<div className="motion-rise rounded-2xl border border-border-default p-5 md:p-7"><h2 className="text-xl font-semibold">{activeMode==="explore"?"이 가능성들을 기록으로 남길까요?":"이 방향으로 정리해볼까요?"}</h2><p className="mt-3 text-base leading-7 text-foreground/70">{activeMode==="explore"?"하나의 실행 방향을 정하지 않아도 괜찮아요. 관심 있는 가능성과 미정인 부분을 함께 남겨둘게요.":"선택한 내용을 바탕으로 아이디어와 실행 방법을 정리할게요."}</p><div className="mt-6 space-y-4">{state.answers.map(answer=><div key={answer.topic} className="rounded-xl bg-surface p-4"><div className="flex justify-between gap-3"><p className="text-sm font-semibold">{labels[answer.topic]}</p><button type="button" disabled={disabled} onClick={()=>back(answer.topic)} className="text-xs text-foreground/65 hover:underline">답변 수정</button></div><p className="mt-2 whitespace-pre-wrap text-base leading-7">{answer.value}</p></div>)}</div><button type="button" disabled={disabled||!online} onClick={()=>base&&void run({action:"confirm",...base})} className="ai-primary mt-6">{busy?<Loader2 size={16} className="animate-spin"/>:<Sparkles size={16}/>}아이디어 정리하기</button></div>}
       {state?.pendingRefinement&&<div role="status" className="motion-rise mb-5 rounded-xl border border-accent/20 bg-accent/5 p-5 text-base leading-7"><p>‘{labels[state.pendingRefinement.topic]}’이 달라질 수 있어요. 방향을 바꾸려는 요청이 맞나요?</p><p className="mt-2 text-sm">{state.pendingRefinement.feedback}</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={disabled} onClick={()=>base&&void run({action:"confirm_refinement",...base})} className="ai-primary">방향을 바꾸고 다시 확인</button><button type="button" disabled={disabled} onClick={()=>base&&void run({action:"cancel_refinement",...base})} className="ai-secondary">기존 방향 유지</button></div></div>}
       {state?.phase==="review"&&state.draft&&<div className="motion-rise rounded-2xl border border-border-default p-5 md:p-7"><div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-b border-border-default pb-5"><p className="text-sm text-foreground/65">내 생각을 정리한 기록</p>{!demo&&<ShareIdea session={session} disabled={disabled||!!state.pendingRefinement}/>}</div><DraftPreview draft={state.draft}/>
-        {activeMode==="explore"&&<details className="mt-8 rounded-xl border border-accent/20 bg-accent/5 p-5"><summary className="cursor-pointer text-base font-semibold">마음에 드는 가능성을 실행으로 이어가기</summary><p className="mt-3 break-keep text-sm leading-7 text-foreground/70">지금의 탐색 기록은 남겨둘게요. 더 구체화하고 싶은 방향을 골라 새 대화로 이어갈 수 있어요.</p><div className="my-4 flex flex-wrap gap-2">{focusCandidates.map((candidate,index)=><button type="button" key={index} disabled={disabled} onClick={()=>setFocusDirection(old=>(old?`${old}\n${candidate}`:candidate).slice(0,2000))} className="rounded-lg border border-border-default bg-panel px-3 py-2 text-left text-sm leading-6 hover:bg-surface">{candidate}</button>)}</div><form onSubmit={e=>{e.preventDefault();if(base)void run({action:"fork_focus",...base,direction:focusDirection});}}><label htmlFor="focus-direction" className="mb-2 block text-sm font-medium">구체화할 방향</label><textarea id="focus-direction" value={focusDirection} maxLength={2000} onChange={e=>setFocusDirection(e.target.value)} rows={3} className="ai-textarea" placeholder="여러 기능을 함께 골라도 좋아요. 직접 적을 수도 있어요."/><button type="submit" disabled={disabled||!!state.pendingRefinement||focusDirection.trim().length<3||!online} className="ai-primary mt-4"><ArrowRight size={15}/>이 방향으로 새 대화 시작</button></form></details>}
-        <details className="mt-7 border-t border-border-default pt-5"><summary className="cursor-pointer text-base font-semibold">더 다듬고 싶은 부분이 있나요?</summary><div className="mt-4 flex flex-wrap gap-2">{REFINEMENT_PRESETS.map(preset=><button key={preset} type="button" onClick={()=>setFeedback(preset)} disabled={disabled} className="ai-secondary">{preset.includes("간결")?"문장 다듬기":preset.includes("평가")?"장점과 한계 살펴보기":"새 가능성 더하기"}</button>)}</div><textarea aria-label="다듬기 요청" value={feedback} maxLength={2000} onChange={e=>setFeedback(e.target.value)} rows={3} placeholder="어떤 부분을 다듬고 싶나요?" className="ai-textarea mt-4"/><div className="mt-3 flex justify-end"><button type="button" disabled={disabled||!!state.pendingRefinement||feedback.trim().length<3||!online} onClick={()=>base&&void run({action:"refine",...base,feedback})} className="ai-secondary">요청한 내용으로 다듬기</button></div></details>
+        {activeMode==="explore"&&<details className="mt-8 rounded-xl border border-accent/20 bg-accent/5 p-5"><summary className="cursor-pointer text-base font-semibold">마음에 드는 가능성을 실행으로 이어가기</summary><p className="mt-3 break-keep text-sm leading-7 text-foreground/70">지금의 탐색 기록은 남겨둘게요. 더 구체화하고 싶은 방향을 골라 새 대화로 이어갈 수 있어요.</p><div className="my-4 flex flex-wrap gap-2">{focusCandidates.map((candidate,index)=><button type="button" key={index} disabled={disabled} onClick={()=>{touch();setFocusDirection(old=>(old?`${old}\n${candidate}`:candidate).slice(0,2000));}} className="rounded-lg border border-border-default bg-panel px-3 py-2 text-left text-sm leading-6 hover:bg-surface">{candidate}</button>)}</div><form onSubmit={e=>{e.preventDefault();if(base)void run({action:"fork_focus",...base,direction:focusDirection});}}><label htmlFor="focus-direction" className="mb-2 block text-sm font-medium">구체화할 방향</label><textarea id="focus-direction" value={focusDirection} disabled={disabled} maxLength={2000} onChange={e=>{touch();setFocusDirection(e.target.value);}} rows={3} className="ai-textarea" placeholder="여러 기능을 함께 골라도 좋아요. 직접 적을 수도 있어요."/><button type="submit" disabled={disabled||!!state.pendingRefinement||focusDirection.trim().length<3||!online} className="ai-primary mt-4"><ArrowRight size={15}/>이 방향으로 새 대화 시작</button></form></details>}
+        <details className="mt-7 border-t border-border-default pt-5"><summary className="cursor-pointer text-base font-semibold">더 다듬고 싶은 부분이 있나요?</summary><div className="mt-4 flex flex-wrap gap-2">{REFINEMENT_PRESETS.map(preset=><button key={preset} type="button" onClick={()=>{touch();setFeedback(preset);}} disabled={disabled} className="ai-secondary">{preset.includes("간결")?"문장 다듬기":preset.includes("평가")?"장점과 한계 살펴보기":"새 가능성 더하기"}</button>)}</div><textarea aria-label="다듬기 요청" value={feedback} disabled={disabled} maxLength={2000} onChange={e=>{touch();setFeedback(e.target.value);}} rows={3} placeholder="어떤 부분을 다듬고 싶나요?" className="ai-textarea mt-4"/><div className="mt-3 flex justify-end"><button type="button" disabled={disabled||!!state.pendingRefinement||feedback.trim().length<3||!online} onClick={()=>base&&void run({action:"refine",...base,feedback})} className="ai-secondary">요청한 내용으로 다듬기</button></div></details>
         <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-border-default pt-5"><button type="button" disabled={disabled} onClick={()=>back("goal")} className="flex items-center gap-1 text-sm text-foreground/70"><ChevronLeft size={14}/>방향 다시 살펴보기</button>{demo?<span className="text-sm text-foreground/65">운영 사이트에서 작성·공유할 수 있어요.</span>:<Link href={`/new?ai=${session.id}`} className={`ai-primary ${disabled||state.pendingRefinement?"pointer-events-none opacity-40":""}`}><ArrowRight size={15}/>문서로 작성하기</Link>}</div></div>}
       {busy&&<p role="status" className="mt-5 flex items-center gap-2 text-sm text-foreground/70"><Loader2 size={15} className="animate-spin"/>{state?.phase==="confirm"&&state.useResearch?"관련 자료를 찾고 정리하고 있어요…":"생각을 이어갈 질문을 준비하고 있어요…"}</p>}
       {!demo&&<ConversationHistory key={`${session.id}:${session.revision}`} session={session}/>}</section>

@@ -1,6 +1,8 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import Tooltip from "@/components/Tooltip";
+import "@/components/Tooltip.css";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { APPEARANCE_KEY, preferenceFor, readAppearance, resolveAppearance, saveAppearance, type Appearance } from "@/lib/appearance";
@@ -48,9 +50,9 @@ export default function ThemeToggle({ className = "" }: Props) {
   const label = appearance === "light" ? "다크 모드로 전환" : "라이트 모드로 전환";
   const Icon = appearance === "light" ? Moon : Sun;
   return (
-    <button type="button" onClick={toggle} aria-label={label} title={label}
+    <Tooltip label={label}><button type="button" onClick={toggle} aria-label={label}
       className={`inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg text-foreground/75 transition-colors hover:bg-surface hover:text-foreground print:hidden ${className}`}>
       <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
-    </button>
+    </button></Tooltip>
   );
 }

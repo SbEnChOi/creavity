@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Search, Shield, ShieldOff, Loader2, UserX } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Tooltip from "@/components/Tooltip";
 import type { Report } from "@/types/report";
 
 const AVATAR_BG: Record<string, string> = {
@@ -242,6 +243,19 @@ function ReportTable({
           {reports.map((r) => {
             const date = new Date(r.updated_at);
             const dateStr = `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`;
+            const deleteButton = <button
+              type="button"
+              onClick={() => onDelete(r.id)}
+              disabled={pendingId === r.id}
+              aria-label="보고서 삭제"
+              className="p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30"
+            >
+              {pendingId === r.id ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Trash2 size={14} strokeWidth={1.75} />
+              )}
+            </button>;
             return (
               <tr
                 key={r.id}
@@ -276,19 +290,7 @@ function ReportTable({
                   {dateStr}
                 </td>
                 <td className="px-2 py-2.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onDelete(r.id)}
-                    disabled={pendingId === r.id}
-                    title="삭제"
-                    className="p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30"
-                  >
-                    {pendingId === r.id ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Trash2 size={14} strokeWidth={1.75} />
-                    )}
-                  </button>
+                  {pendingId === r.id ? deleteButton : <Tooltip label="보고서 삭제">{deleteButton}</Tooltip>}
                 </td>
               </tr>
             );
@@ -327,6 +329,16 @@ function MemberTable({
           const color = m.avatar_color ?? "gray";
           const isMe = m.id === currentUserId;
           const isAdmin = !!m.is_admin;
+          const deleteButton = <button
+            type="button"
+            onClick={() => onDelete(m.id, name)}
+            disabled={pendingId === m.id || isMe}
+            aria-label="멤버 삭제"
+            aria-describedby={isMe ? `member-delete-self-${m.id}` : undefined}
+            className="inline-flex items-center gap-1 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30"
+          >
+            <UserX size={14} strokeWidth={1.75} />
+          </button>;
           return (
             <li
               key={m.id}
@@ -378,15 +390,8 @@ function MemberTable({
                   )}
                   {isAdmin ? "관리자 해제" : "관리자 지정"}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete(m.id, name)}
-                  disabled={pendingId === m.id || isMe}
-                  title={isMe ? "본인은 삭제 불가" : "멤버 삭제"}
-                  className="inline-flex items-center gap-1 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30"
-                >
-                  <UserX size={14} strokeWidth={1.75} />
-                </button>
+                {pendingId === m.id || isMe ? deleteButton : <Tooltip label="멤버 삭제">{deleteButton}</Tooltip>}
+                {isMe && <span id={`member-delete-self-${m.id}`} className="text-[10px] leading-tight text-foreground/45">본인은 삭제 불가</span>}
               </div>
             </li>
           );

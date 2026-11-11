@@ -179,7 +179,8 @@ aside.creavy-v2-sidebar {
   .creavy-v2-sidebar nav { padding: 8px; }
   .creavy-v2-sidebar nav a { min-height: 44px; justify-content: center; padding: 0; }
   .creavy-v2-sidebar > div:last-child { padding: 8px 8px 12px; }
-  .creavy-v2-sidebar > div:last-child > button { min-height: 44px; justify-content: center; }
+  .creavy-v2-sidebar > div:last-child > button,
+  .creavy-v2-sidebar > div:last-child > .creavy-tooltip-trigger > button { min-height: 44px; justify-content: center; }
 }
 
 @layer components {

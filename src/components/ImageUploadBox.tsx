@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Upload, X, Loader2, Plus } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Tooltip from "@/components/Tooltip";
 
 const MAX_SIZE_MB = 5;
 
@@ -223,14 +224,14 @@ function Tile({ url, onRemove }: { url: string; onRemove: () => void }) {
     <div className="relative w-full h-full bg-surface group">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" className="w-full h-full object-cover" />
-      <button
+      <Tooltip label="사진 삭제"><button
         type="button"
         onClick={(e) => { e.stopPropagation(); onRemove(); }}
         className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/60 text-white reveal-on-hover focus-visible:opacity-100 transition-opacity"
-        title="삭제"
+        aria-label="사진 삭제"
       >
         <X size={12} strokeWidth={2} />
-      </button>
+      </button></Tooltip>
     </div>
   );
 }

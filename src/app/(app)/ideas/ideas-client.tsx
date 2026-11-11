@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe, Lightbulb, Loader2, Lock, Send, Sparkles, Trash2, UserCheck } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import Tooltip from "@/components/Tooltip";
 
 const AVATAR_BG: Record<string, string> = {
   gray: "bg-gray-200 text-gray-700",
@@ -212,27 +213,26 @@ export default function IdeasClient({
               const date = new Date(idea.created_at);
               const dateStr = formatDate(date);
               const vis = visibilityMeta(idea.visibility);
+              const deleteButton = <button
+                type="button"
+                onClick={() => handleDelete(idea.id)}
+                disabled={pendingId === idea.id}
+                aria-label="아이디어 삭제"
+                className="absolute top-3 right-3 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 reveal-on-hover focus-visible:opacity-100 transition-opacity disabled:opacity-30"
+              >
+                {pendingId === idea.id ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Trash2 size={13} strokeWidth={1.75} />
+                )}
+              </button>;
 
               return (
                 <li
                   key={idea.id}
                   className="group relative p-4 rounded-lg border border-border-default hover:bg-surface/50 transition-colors"
                 >
-                  {isMine && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(idea.id)}
-                      disabled={pendingId === idea.id}
-                      title="삭제"
-                      className="absolute top-3 right-3 p-1.5 rounded-md text-foreground/40 hover:text-red-600 hover:bg-red-50 reveal-on-hover focus-visible:opacity-100 transition-opacity disabled:opacity-30"
-                    >
-                      {pendingId === idea.id ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={13} strokeWidth={1.75} />
-                      )}
-                    </button>
-                  )}
+                  {isMine && (pendingId === idea.id ? deleteButton : <Tooltip label="아이디어 삭제">{deleteButton}</Tooltip>)}
 
                   <h3 className="text-base font-semibold text-foreground mb-1.5 pr-8">
                     {idea.title}
