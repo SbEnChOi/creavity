@@ -18,7 +18,7 @@
   --foreground: #111111;
   --surface: #fffdf4;
   --panel: #ffffff;
-  --border: #cfc7b4;
+  --border: #111111;
   --border-strong: #111111;
   --accent: #111111;
   --mark: #eaff36;
@@ -26,7 +26,7 @@
   --foreground-rgb: 17 17 17;
   --surface-rgb: 255 253 244;
   --panel-rgb: 255 255 255;
-  --border-rgb: 222 210 178;
+  --border-rgb: 17 17 17;
   --accent-rgb: 17 17 17;
   --inverse-rgb: 255 255 255;
   --on-accent-rgb: 255 255 255;
@@ -40,7 +40,7 @@
   --foreground: #ffffff;
   --surface: #3b3b3b;
   --panel: #363636;
-  --border: #6a6a63;
+  --border: #d6d6ce;
   --border-strong: #dcdcd4;
   --accent: #eaff36;
   --mark: #eaff36;
@@ -48,7 +48,7 @@
   --foreground-rgb: 255 255 255;
   --surface-rgb: 59 59 59;
   --panel-rgb: 54 54 54;
-  --border-rgb: 106 106 99;
+  --border-rgb: 214 214 206;
   --accent-rgb: 234 255 54;
   --inverse-rgb: 51 51 51;
   --on-accent-rgb: 23 23 23;
